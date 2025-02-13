@@ -521,9 +521,18 @@ const ChatBox = React.forwardRef(({
 
   const handleQuizComplete = (results) => {
     setMessages(prev => [...prev, {
-      text: `Quiz completed!\nScore: ${results.score}/${results.total}`,
-      isUser: false
+      type: 'system',
+      content: `Quiz completed! Your score: ${results.score}/${results.total}`,
+      timestamp: new Date()
     }]);
+    
+    if (results.details) {
+      setMessages(prev => [...prev, {
+        type: 'system',
+        content: `Detailed results: ${JSON.stringify(results.details)}`,
+        timestamp: new Date()
+      }]);
+    }
   };
 
   /**

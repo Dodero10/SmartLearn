@@ -134,33 +134,9 @@ const QuizInterface = ({ quiz, settings, onComplete }) => {
   const [timeLeft, setTimeLeft] = useState(settings.timePerQuestion * quiz.questions.length);
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
+  const [questions, setQuestions] = useState([]);
 
-  useEffect(() => {
-    if (timeLeft > 0 && !showResults) {
-      const timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else if (timeLeft === 0 && !showResults) {
-      handleSubmit();
-    }
-  }, [timeLeft, showResults]);
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleOptionSelect = (questionIndex, optionIndex) => {
-    if (showResults) return;
-    setSelectedAnswers(prev => ({
-      ...prev,
-      [questionIndex]: optionIndex
-    }));
-  };
-
-  const handleSubmit = () => {
+  const handleSubmit = React.useCallback(() => {
     let correctAnswers = 0;
     quiz.questions.forEach((question, index) => {
       if (selectedAnswers[index] === question.correctAnswer) {
@@ -174,6 +150,32 @@ const QuizInterface = ({ quiz, settings, onComplete }) => {
       total: quiz.questions.length,
       answers: selectedAnswers
     });
+  }, [quiz.questions, selectedAnswers, onComplete]);
+
+  useEffect(() => {
+    if (timeLeft === 0) {
+      handleSubmit();
+    }
+    
+    const timer = timeLeft > 0 && setInterval(() => {
+      setTimeLeft(time => time - 1);
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [timeLeft, handleSubmit]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleOptionSelect = (questionIndex, optionIndex) => {
+    if (showResults) return;
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionIndex]: optionIndex
+    }));
   };
 
   return (

@@ -13,21 +13,29 @@ import HelpIcon from '@mui/icons-material/Help';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import VideoPlayer from '../video/VideoPlayer';
 import QuizInterface from '../quiz/QuizInterface';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import CreateIcon from '@mui/icons-material/Create';
 
 const ChatContainer = styled.div`
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: transparent;
 `;
 
 const Header = styled.div`
   padding: 16px 24px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--blur-background);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 `;
 
 const HeaderLeft = styled.div`
@@ -38,8 +46,43 @@ const HeaderLeft = styled.div`
 
 const HeaderTitle = styled.h2`
   margin: 0;
-  color: #1a237e;
+  color: var(--text-primary);
   font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const NewChatButton = styled.button`
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.15);
+
+  &:hover {
+    background: #0055b3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 102, 204, 0.15);
+  }
+
+  svg {
+    font-size: 20px;
+  }
 `;
 
 const ModelSelector = styled.div`
@@ -47,56 +90,60 @@ const ModelSelector = styled.div`
 `;
 
 const ModelButton = styled.button`
-  background: none;
-  border: 1px solid #e0e0e0;
-  padding: 8px 12px;
-  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #1a237e;
+  color: var(--text-primary);
   font-size: 14px;
-  transition: all 0.3s ease;
+  font-weight: 500;
+  transition: all 0.2s ease;
 
   &:hover {
-    background: #f0f2ff;
-    border-color: #1a237e;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  &:active {
+    background: rgba(0, 0, 0, 0.08);
   }
 `;
 
 const ModelDropdown = styled.div`
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   right: 0;
-  margin-top: 4px;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--blur-background);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.04),
+    0 12px 32px rgba(0, 0, 0, 0.12);
   z-index: 10;
-  min-width: 200px;
+  min-width: 220px;
   display: ${props => props.isOpen ? 'block' : 'none'};
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.5);
 `;
 
 const ModelOption = styled.div`
   padding: 12px 16px;
   cursor: pointer;
-  transition: background 0.3s ease;
-  color: ${props => props.active ? '#1a237e' : '#333'};
-  background: ${props => props.active ? '#f0f2ff' : 'transparent'};
+  transition: all 0.2s ease;
+  color: ${props => props.active ? 'var(--primary-color)' : 'var(--text-primary)'};
+  background: ${props => props.active ? 'rgba(0, 102, 204, 0.08)' : 'transparent'};
   font-weight: ${props => props.active ? '500' : 'normal'};
 
   &:hover {
-    background: #f0f2ff;
+    background: rgba(0, 0, 0, 0.04);
   }
 
-  &:first-child {
-    border-radius: 8px 8px 0 0;
-  }
-
-  &:last-child {
-    border-radius: 0 0 8px 8px;
+  &:active {
+    background: rgba(0, 0, 0, 0.06);
   }
 `;
 
@@ -104,13 +151,13 @@ const MessagesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  background-color: #f8f9fa;
+  background-color: transparent;
   display: flex;
   flex-direction: column;
   gap: 24px;
 
   &::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
 
   &::-webkit-scrollbar-track {
@@ -118,15 +165,25 @@ const MessagesContainer = styled.div`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 `;
 
 const InputWrapper = styled.div`
-  border-top: 1px solid #e0e0e0;
-  padding: 24px;
-  background: white;
+  border-top: 1px solid var(--border-color);
+  padding: 16px 24px 24px;
+  background: var(--blur-background);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
 `;
 
 const InputContainer = styled.div`
@@ -140,35 +197,63 @@ const InputContainer = styled.div`
 
 const TextArea = styled.textarea`
   flex: 1;
-  padding: 12px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.47059;
   resize: none;
   height: 56px;
   max-height: 200px;
   overflow-y: auto;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-primary);
 
   &:focus {
     outline: none;
-    border-color: #1a237e;
-    box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.15);
+  }
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 `;
 
 const IconButton = styled.button`
   background: none;
   border: none;
-  padding: 8px;
+  padding: 12px;
   cursor: pointer;
-  color: ${props => props.disabled ? '#9e9e9e' : '#1a237e'};
-  transition: all 0.3s ease;
-  border-radius: 4px;
+  color: ${props => props.disabled ? 'var(--text-secondary)' : 'var(--primary-color)'};
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
 
   &:hover:not(:disabled) {
-    background: rgba(26, 35, 126, 0.1);
+    background: rgba(0, 102, 204, 0.08);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(0, 102, 204, 0.12);
   }
 
   &:disabled {
@@ -180,27 +265,45 @@ const FileInput = styled.input`
   display: none;
 `;
 
+const FileUploadButton = styled(IconButton)`
+  position: relative;
+  
+  &::after {
+    content: '${props => props.fileCount > 0 ? props.fileCount : ''}';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    min-width: 20px;
+    height: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: ${props => props.fileCount > 0 ? 'flex' : 'none'};
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+  }
+`;
+
 const WelcomeMessage = styled.div`
   text-align: center;
-  color: #666;
-  margin: 48px 0;
-
-  h1 {
-    color: #1a237e;
-    margin-bottom: 16px;
-  }
-
-  p {
-    font-size: 1.1rem;
-    max-width: 600px;
-    margin: 0 auto;
-  }
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.47059;
+  letter-spacing: -0.022em;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 48px 24px;
 `;
 
 const FunctionBar = styled.div`
   padding: 12px 24px;
-  background: #f8f9fa;
-  border-top: 1px solid #e0e0e0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 `;
 
 const FunctionContainer = styled.div`
@@ -217,22 +320,21 @@ const FunctionButton = styled.button`
   justify-content: center;
   gap: 8px;
   padding: 12px;
-  border: 1px solid ${props => props.active ? '#1a237e' : '#e0e0e0'};
-  border-radius: 8px;
-  background: ${props => props.active ? '#f0f2ff' : 'white'};
-  color: ${props => props.active ? '#1a237e' : '#666'};
+  border: none;
+  border-radius: 10px;
+  background: ${props => props.active ? 'rgba(0, 122, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'};
+  color: ${props => props.active ? '#007AFF' : '#666'};
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-size: 14px;
+  font-weight: 500;
 
   &:hover {
-    background: #f0f2ff;
-    border-color: #1a237e;
-    color: #1a237e;
+    background: ${props => props.active ? 'rgba(0, 122, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)'};
   }
 
-  svg {
-    font-size: 20px;
+  &:active {
+    background: ${props => props.active ? 'rgba(0, 122, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)'};
   }
 `;
 
@@ -275,7 +377,12 @@ const ChatBox = React.forwardRef(({
   activeFunction, 
   onFunctionChange, 
   settings,
-  chatHistory 
+  chatHistory,
+  uploadedFiles,
+  onUploadFiles,
+  onRemoveFile,
+  isSidebarOpen,
+  onStartNewChat
 }, ref) => {
   // State lưu trữ danh sách tin nhắn
   const [messages, setMessages] = useState([]);
@@ -297,7 +404,6 @@ const ChatBox = React.forwardRef(({
   const [quizData, setQuizData] = useState(null);
   const [showQuizInterface, setShowQuizInterface] = useState(false);
   const [showVideoInterface, setShowVideoInterface] = useState(false);
-  const uploadedFile = useRef(null);
   
   // Kiểm tra xem cuộc hội thoại đã bắt đầu chưa
   const hasStartedChat = messages.length > 0;
@@ -313,13 +419,15 @@ const ChatBox = React.forwardRef(({
     setIsModelDropdownOpen(false);
   };
 
+  // Reset messages when activeChatId changes
   useEffect(() => {
     if (activeChatId) {
-      // TODO: Load messages for the active chat
+      const currentChat = chatHistory.find(chat => chat.id === activeChatId);
+      setMessages(currentChat?.messages || []);
     } else {
       setMessages([]);
     }
-  }, [activeChatId]);
+  }, [activeChatId, chatHistory]);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
@@ -335,57 +443,15 @@ const ChatBox = React.forwardRef(({
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-    uploadedFile.current = file;
-    
-    let message = '';
-    setIsLoading(true);
-    
-    switch (activeFunction) {
-      case 'video':
-        message = `Slides "${file.name}" has been uploaded. Please provide any specific instructions for the video conversion.`;
-        setMessages(prev => [...prev, { 
-          text: message, 
-          isUser: false 
-        }]);
-        break;
+    onUploadFiles(files);
 
-      case 'quiz':
-        message = `Generating quiz from ${file.name}...`;
-        try {
-          setMessages(prev => [...prev, { text: message, isUser: true, isFileUpload: true }]);
-          const quiz = await functionService.generateQuiz(file);
-          setMessages(prev => [...prev, { 
-            text: '### Generated Quiz\n\n' + formatQuiz(quiz),
-            isUser: false 
-          }]);
-        } catch (error) {
-          setMessages(prev => [...prev, { 
-            text: 'Sorry, I encountered an error generating the quiz.',
-            isUser: false 
-          }]);
-        }
-        break;
-
-      default:
-        message = `Processing ${file.name} for tutoring...`;
-        try {
-          setMessages(prev => [...prev, { text: message, isUser: true, isFileUpload: true }]);
-          const result = await functionService.processTutoringDocument(file);
-          setMessages(prev => [...prev, { 
-            text: 'Document processed successfully! You can now ask questions about it.',
-            isUser: false 
-          }]);
-        } catch (error) {
-          setMessages(prev => [...prev, { 
-            text: 'Sorry, I encountered an error processing your document.',
-            isUser: false 
-          }]);
-        }
-    }
-    setIsLoading(false);
+    // Optional: You can also send these files to your backend here
+    // const formData = new FormData();
+    // files.forEach(file => formData.append('files', file));
+    // await chatService.uploadFiles(formData);
   };
 
   // Helper function to format quiz for display
@@ -418,7 +484,7 @@ const ChatBox = React.forwardRef(({
 
     setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
 
-    if (messages.length === 0) {
+    if (!activeChatId && messages.length === 0) {
       onNewChat({
         id: threadId.current,
         title: userMessage.slice(0, 30) + (userMessage.length > 30 ? '...' : ''),
@@ -453,36 +519,17 @@ const ChatBox = React.forwardRef(({
   };
 
   const handleTutorChat = async (message) => {
-    await chatService.sendMessageStream(
-      message,
-      threadId.current,
-      selectedModel,
-      settings, // Pass all relevant settings
-      (token) => {
-        streamedMessageRef.current += token;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          lastMessage.text = streamedMessageRef.current;
-          return newMessages;
-        });
-      },
-      (error) => {
-        console.error('Stream error:', error);
-        setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1].text = 'Sorry, I encountered an error processing your request.';
-          return newMessages;
-        });
-      }
-    );
+    // Mock response for AI Tutor
+    setMessages(prev => [...prev, { text: 'Hello', isUser: false }]);
   };
 
   const handleVideoConversion = async (message) => {
-    if (!uploadedFile.current) {
+    if (uploadedFiles.length === 0) {
       setMessages(prev => {
         const newMessages = [...prev];
-        newMessages[newMessages.length - 1].text = 'Please upload your slides (PDF/PPTX) first before converting to video.';
+        if (newMessages.length > 0) {
+          newMessages[newMessages.length - 1].text = 'Please upload your slides (PDF/PPTX) first before converting to video.';
+        }
         return newMessages;
       });
       return;
@@ -495,7 +542,9 @@ const ChatBox = React.forwardRef(({
     
     setMessages(prev => {
       const newMessages = [...prev];
-      newMessages[newMessages.length - 1].text = 'Video has been loaded! You can now watch it and ask questions about the content.';
+      if (newMessages.length > 0) {
+        newMessages[newMessages.length - 1].text = 'Video has been loaded! You can now watch it and ask questions about the content.';
+      }
       return newMessages;
     });
   };
@@ -507,13 +556,17 @@ const ChatBox = React.forwardRef(({
       setShowQuizInterface(true);
       setMessages(prev => {
         const newMessages = [...prev];
-        newMessages[newMessages.length - 1].text = 'Quiz has been generated! You can start now.';
+        if (newMessages.length > 0) {
+          newMessages[newMessages.length - 1].text = 'Quiz has been generated! You can start now.';
+        }
         return newMessages;
       });
     } catch (error) {
       setMessages(prev => {
         const newMessages = [...prev];
-        newMessages[newMessages.length - 1].text = 'Sorry, I encountered an error generating the quiz.';
+        if (newMessages.length > 0) {
+          newMessages[newMessages.length - 1].text = 'Sorry, I encountered an error generating the quiz.';
+        }
         return newMessages;
       });
     }
@@ -567,17 +620,13 @@ const ChatBox = React.forwardRef(({
   }, [isModelDropdownOpen]);
 
   const handleFunctionChange = (newFunction) => {
-    onFunctionChange(newFunction); // Thông báo cho parent component
-    // Reset message input và placeholder
+    onFunctionChange(newFunction);
     setInput('');
-    // Reset streamed message
     streamedMessageRef.current = '';
-    // Reset video state khi chuyển function
     setVideoId(null);
     setTranscript(null);
     setShowVideoInterface(false);
     setShowQuizInterface(false);
-    uploadedFile.current = null;
   };
 
   // Cập nhật placeholder text dựa trên function đang active
@@ -627,7 +676,18 @@ const ChatBox = React.forwardRef(({
           </VideoSection>
           <ChatSection>
             <Header>
-              <HeaderTitle>AI Assistant</HeaderTitle>
+              <HeaderLeft>
+                {!isSidebarOpen && (
+                  <NewChatButton onClick={onStartNewChat}>
+                    <CreateIcon />
+                  </NewChatButton>
+                )}
+                <HeaderTitle>
+                  {activeFunction === 'video' ? 'Slide to Video' : 
+                   activeFunction === 'quiz' ? 'Quiz Generator' : 
+                   'AI Tutor Chat'}
+                </HeaderTitle>
+              </HeaderLeft>
             </Header>
             <MessagesContainer>
               {messages.map((message, index) => (
@@ -642,23 +702,22 @@ const ChatBox = React.forwardRef(({
               <InputContainer>
                 <FileInput
                   type="file"
+                  multiple
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                   accept=".pdf,.pptx"
                 />
-                <IconButton
+                <FileUploadButton
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
+                  fileCount={uploadedFiles.length}
                 >
                   <AttachFileIcon />
-                </IconButton>
+                </FileUploadButton>
                 <TextArea
                   value={input}
                   onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
-                  placeholder={uploadedFile.current 
-                    ? "Provide instructions for video conversion..." 
-                    : "Upload your slides first..."}
+                  placeholder={uploadedFiles.length > 0 ? "Provide instructions for video conversion..." : "Upload your slides first..."}
                   disabled={isLoading}
                 />
                 <IconButton
@@ -681,6 +740,11 @@ const ChatBox = React.forwardRef(({
         <>
           <Header>
             <HeaderLeft>
+              {!isSidebarOpen && (
+                <NewChatButton onClick={onStartNewChat}>
+                  <CreateIcon />
+                </NewChatButton>
+              )}
               <HeaderTitle>
                 {activeFunction === 'video' ? 'Slide to Video' : 
                  activeFunction === 'quiz' ? 'Quiz Generator' : 
@@ -763,16 +827,17 @@ const ChatBox = React.forwardRef(({
             <InputContainer>
               <FileInput
                 type="file"
+                multiple
                 ref={fileInputRef}
                 onChange={handleFileUpload}
                 accept={getAcceptedFileTypes()}
               />
-              <IconButton
+              <FileUploadButton
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
+                fileCount={uploadedFiles.length}
               >
                 <AttachFileIcon />
-              </IconButton>
+              </FileUploadButton>
               <TextArea
                 value={input}
                 onChange={handleInputChange}

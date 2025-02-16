@@ -1,6 +1,7 @@
+import json
 import os
 import sys
-import json
+
 from utils.gpt_call import ChatGPTGen
 
 
@@ -36,15 +37,15 @@ class QuestionType:
             "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
             "3. Đọc câu hỏi mà tôi đưa ra.\n"
             "4. Xác định xem câu hỏi đó có phải là câu chào hỏi thông thường (để làm quen, giới thiệu) hay không.\n"
-            "5. Nếu là câu chào hỏi thông thường, hãy trả lời là 'false'.\n"
-            "6. Nếu là câu hỏi về kiến thức học tập, hãy trả về 'true'.\n"
+            "5. Nếu là prompt  mong muốn tìm hiểu hãy trả về 'true'.\n"
+            "6. Nếu là câu chào hỏi thông thường, hãy trả lời là 'false'.\n"
             "7. Chỉ trả lời là 'true' hoặc 'false'.\n"
             "8. Không được thêm thông tin gì ngoài ngữ cảnh tôi cung cấp.\n"
-            "9. Ví dụ:\n"
-            "   - 'Xin chào, bạn có khỏe không?' -> 'false'\n"
-            "   - 'Định lý Pythagoras là gì?' -> 'true'\n"
-            "   - 'Hôm nay thời tiết thế nào?' -> 'false'\n"
-            "   - 'Ai là người phát minh ra bóng đèn?' -> 'true'"
+            # "9. Ví dụ:\n"
+            # "   - 'Xin chào, bạn có khỏe không?' -> 'false'\n"
+            # "   - 'Định lý Pythagoras là gì?' -> 'true'\n"
+            # "   - 'Hôm nay thời tiết thế nào?' -> 'false'\n"
+            # "   - 'Ai là người phát minh ra bóng đèn?' -> 'true'"
         )
 
         messages = create_message(system_contents, user_contents=question)
@@ -162,16 +163,30 @@ class QuestionType:
             yield chunk
 
     def get_document_query(self, question):
-        document_query = []
-        hypothetical_document = self.hyDE_improve(question)
-        document_query.append(hypothetical_document)
+        try:
+            print("Getting document query")
+            document_query = []
+            
+            print("Getting hypothetical document")
+            hypothetical_document = self.hyDE_improve(question)
+            document_query.append(hypothetical_document)
 
-        question_context = self.improve_question(question=question)
-        question_context = question_context.replace("'", '"')
-        question_context = json.loads(question_context)
-        document_query.append(question_context['summary'])
-        document_query.append(question_context['item'])
-        return document_query
+            print("Improving question")
+            question_context = self.improve_question(question=question)
+            print(f"Question context before parsing: {question_context}")
+            question_context = question_context.replace("'", '"')
+            question_context = json.loads(question_context)
+            print(f"Parsed question context: {question_context}")
+            
+            document_query.append(question_context['summary'])
+            document_query.append(question_context['topic'])
+            
+            print(f"Final document query: {document_query}")
+            return document_query
+        except Exception as e:
+            print(f"Error in get_document_query: {str(e)}")
+            raise e
+
     def gen_question(self,content):
         systemt_contents=  f"""
             Bạn là một trợ lý AI chuyên tạo câu hỏi trắc nghiệm từ văn bản. 

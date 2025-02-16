@@ -7,6 +7,7 @@ from PIL import Image
 from fastapi.responses import StreamingResponse
 from file_processing.file_processing import parsing,chunking
 from utils.database_manage import DatabaseManager
+from chat_query.query import query
 @celery_app.task(name='tasks.save_pdf_to_minio')
 def save_pdf_to_minio(file_data: bytes, filename: str):
     try:

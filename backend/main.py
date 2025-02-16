@@ -10,9 +10,23 @@ from config.minio_client import bucket_name, minio_client
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from tasks import (delete_pdf_and_images, download_pdf_from_minio,
-                   generate_lecture, save_pdf_to_minio, upload_slide)
+                   generate_lecture, save_pdf_to_minio, upload_slide, create_chat_task, create_project_task, delete_chat_task, delete_file_in_chat_task, get_chat_message_task, get_history_task, get_setting_task, push_setting_task, search_chat_task, send_message_task, update_name_chat_task, update_name_project_task, upload_file_db_task)
+from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+app = FastAPI(
+    title="Chat API",
+    description="API for chat application",
+    version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/upload_pdf/")
@@ -177,3 +191,113 @@ async def handle_generate_lecture(file: UploadFile = File(...)):
 
 
 ####### Dat
+####### Phuc
+
+class ProjectCreate(BaseModel):
+    user_id: str = Field(..., description="ID của user")
+    project_name: str = Field(..., description="Tên project")
+
+class ChatCreate(BaseModel):
+    project_id: str = Field(..., description="ID của project") 
+    title: str = Field(..., description="Tiêu đề chat")
+
+class MessageCreate(BaseModel):
+    chat_id: str = Field(..., description="ID của chat")
+    role: str = Field(..., description="Vai trò (user/bot)")
+    content: str = Field(..., description="Nội dung tin nhắn")
+
+class SettingCreate(BaseModel):
+    user_id: str = Field(..., description="ID của user")
+    key: str = Field(..., description="Khóa setting")
+    value: str = Field(..., description="Giá trị setting")
+
+@app.get("/history/{user_id}", 
+    tags=["Chat"],
+    summary="Lấy lịch sử chat",
+    response_description="Danh sách các chat"
+)
+async def get_chat_history(user_id: str):
+    task = get_history_task.delay(user_id)
+    result = await handle_task_result(task)
+    return result
+
+@app.get("/setting/{user_id}/{key}")
+async def get_user_setting(user_id: str, key: str):
+    task = get_setting_task.delay(user_id, key)
+    result = await handle_task_result(task)
+    return result
+
+@app.post("/project",
+    tags=["Project"], 
+    summary="Tạo project mới",
+    response_description="Project đã được tạo"
+)
+async def create_new_project(project: ProjectCreate):
+    task = create_project_task.delay(project.user_id, project.project_name)
+    result = await handle_task_result(task)
+    return result
+
+@app.post("/chat")
+async def create_new_chat(chat: ChatCreate):
+    task = create_chat_task.delay(chat.project_id, chat.title)
+    result = await handle_task_result(task)
+    return result
+
+@app.post("/message")
+async def send_new_message(message: MessageCreate):
+    task = send_message_task.delay(message.chat_id, message.role, message.content)
+    result = await handle_task_result(task)
+    return result
+
+@app.post("/setting")
+async def create_setting(setting: SettingCreate):
+    task = push_setting_task.delay(setting.user_id, setting.key, setting.value)
+    result = await handle_task_result(task)
+    return result
+
+@app.delete("/chat/{chat_id}")
+async def remove_chat(chat_id: str):
+    task = delete_chat_task.delay(chat_id)
+    result = await handle_task_result(task)
+    return result
+
+@app.get("/chat/{chat_id}/messages")
+async def get_messages(chat_id: str):
+    task = get_chat_message_task.delay(chat_id)
+    result = await handle_task_result(task)
+    return result
+
+@app.delete("/chat/{chat_id}/files")
+async def delete_chat_files(chat_id: str):
+    task = delete_file_in_chat_task.delay(chat_id)
+    result = await handle_task_result(task)
+    return result
+
+@app.put("/project/{project_id}/name/{new_name}")
+async def rename_project(project_id: str, new_name: str):
+    task = update_name_project_task.delay(project_id, new_name)
+    result = await handle_task_result(task)
+    return result
+
+@app.put("/chat/{chat_id}/name/{new_name}")
+async def rename_chat(chat_id: str, new_name: str):
+    task = update_name_chat_task.delay(chat_id, new_name)
+    result = await handle_task_result(task)
+    return result
+
+@app.get("/search/{user_id}")
+async def search_chats(user_id: str, keyword: str):
+    task = search_chat_task.delay(user_id, keyword)
+    result = await handle_task_result(task)
+    return result
+
+# Helper function để xử lý kết quả task
+async def handle_task_result(task):
+    while True:
+        result = AsyncResult(task.id, app=celery_app)
+        if result.ready():
+            if result.successful():
+                return result.result
+            else:
+                raise HTTPException(status_code=500, detail="Task failed")
+        await asyncio.sleep(0.1)

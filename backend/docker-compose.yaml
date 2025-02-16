@@ -16,9 +16,12 @@ services:
     depends_on:
       - redis
       - minio
+      - mongodb
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - DATABASE_NAME=your_database_name
 
   celery_worker:
     build: .
@@ -26,6 +29,7 @@ services:
     command: celery -A config.celery_app.celery_app worker --loglevel=info
     depends_on:
       - redis
+      - mongodb
     volumes:
       - .:/app
       - chromadb_data:/app/chromadb
@@ -35,6 +39,8 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - DATABASE_NAME=your_database_name
 
   redis:
     image: "redis:6"
@@ -57,6 +63,17 @@ services:
     env_file:
       - ./.env
 
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=your_database_name
+
 volumes:
   minio_data:
   chromadb_data:
+  mongodb_data:

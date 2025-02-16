@@ -6,14 +6,41 @@ import styled from 'styled-components';
 
 const PageContainer = styled.div`
   height: 100%;
-  background-color: #f8f9fa;
+  background-color: transparent;
   display: flex;
+  gap: 16px;
+  padding: 16px;
+  
+  @media (max-width: 768px) {
+    padding: 8px;
+    gap: 8px;
+  }
 `;
 
 const MainContent = styled.div`
   flex: 1;
   display: flex;
   position: relative;
+  background: var(--blur-background);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border-radius: 20px;
+  box-shadow: 
+    0 2px 5px rgba(0, 0, 0, 0.02),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  
+  @media (max-width: 768px) {
+    border-radius: 16px;
+  }
+
+  &:hover {
+    box-shadow: 
+      0 2px 5px rgba(0, 0, 0, 0.04),
+      0 12px 32px rgba(0, 0, 0, 0.12);
+  }
 `;
 
 /**
@@ -54,7 +81,6 @@ const ChatPage = () => {
 
   const handleChatSelect = (chatId) => {
     setActiveChatId(chatId);
-    // TODO: Load chat messages for the selected chat
   };
 
   const handleChatDelete = (chatId) => {
@@ -67,9 +93,12 @@ const ChatPage = () => {
   const handleNewChat = (chatData) => {
     const newChat = {
       ...chatData,
-      type: activeFunction
+      type: activeFunction,
+      uploadedFiles: [], // Initialize empty files array for new chat
+      messages: [] // Initialize empty messages array
     };
     setChatHistory(prev => [...prev, newChat]);
+    setActiveChatId(chatData.id);
   };
 
   const handleSettingsChange = (key, value) => {
@@ -81,11 +110,147 @@ const ChatPage = () => {
 
   const handleStartNewChat = () => {
     setActiveChatId(null);
-    setActiveFunction('tutor');
+    const newChatId = Date.now().toString();
+    const newChat = {
+      id: newChatId,
+      title: 'New Chat',
+      timestamp: new Date(),
+      type: activeFunction,
+      messages: []
+    };
+    setChatHistory(prev => [...prev, newChat]);
+    setActiveChatId(newChatId);
     if (chatBoxRef.current) {
       chatBoxRef.current.resetChat();
     }
   };
+
+  const handleUploadFiles = (files) => {
+    const newFiles = Array.from(files).map(file => ({
+      file,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      selected: true,
+      lastModified: file.lastModified
+    }));
+
+    if (!activeChatId) {
+      // Create a new chat with the uploaded files
+      const newChatId = Date.now().toString();
+      const newChat = {
+        id: newChatId,
+        title: activeFunction === 'quiz' ? 'New Quiz' : 'New Chat',
+        timestamp: new Date(),
+        type: activeFunction,
+        uploadedFiles: newFiles,
+        messages: [],
+        quizState: activeFunction === 'quiz' ? {
+          status: 'preparing', // preparing, generating, ready
+          questions: [],
+          currentQuestion: 0,
+          score: 0,
+          answers: []
+        } : null
+      };
+      setChatHistory(prev => [...prev, newChat]);
+      setActiveChatId(newChatId);
+
+      // Nếu là quiz, tự động gửi tin nhắn yêu cầu tạo quiz từ file
+      if (activeFunction === 'quiz') {
+        const fileNames = newFiles.map(f => f.name).join(', ');
+        const message = {
+          id: Date.now().toString(),
+          text: `Please generate a quiz from these files: ${fileNames}`,
+          isUser: true,
+          timestamp: new Date()
+        };
+        setChatHistory(prev => 
+          prev.map(chat => 
+            chat.id === newChatId 
+              ? { ...chat, messages: [...chat.messages, message] }
+              : chat
+          )
+        );
+      }
+      return;
+    }
+    
+    // Add files to existing chat
+    setChatHistory(prev => {
+      return prev.map(chat => {
+        if (chat.id === activeChatId) {
+          const existingFiles = Array.isArray(chat.uploadedFiles) ? chat.uploadedFiles : [];
+          const updatedChat = {
+            ...chat,
+            uploadedFiles: [...existingFiles, ...newFiles]
+          };
+
+          // Nếu là quiz và đang trong trạng thái preparing, tự động gửi tin nhắn
+          if (chat.type === 'quiz' && chat.quizState?.status === 'preparing') {
+            const fileNames = newFiles.map(f => f.name).join(', ');
+            const message = {
+              id: Date.now().toString(),
+              text: `Please add these files to the quiz generation: ${fileNames}`,
+              isUser: true,
+              timestamp: new Date()
+            };
+            updatedChat.messages = [...updatedChat.messages, message];
+          }
+
+          return updatedChat;
+        }
+        return chat;
+      });
+    });
+  };
+
+  const handleRemoveFile = (fileName) => {
+    if (!activeChatId) return;
+
+    setChatHistory(prev => prev.map(chat => {
+      if (chat.id === activeChatId && Array.isArray(chat.uploadedFiles)) {
+        const updatedChat = {
+          ...chat,
+          uploadedFiles: chat.uploadedFiles.filter(file => file.name !== fileName)
+        };
+
+        // Nếu là quiz và đang trong trạng thái preparing, cập nhật tin nhắn
+        if (chat.type === 'quiz' && chat.quizState?.status === 'preparing') {
+          const message = {
+            id: Date.now().toString(),
+            text: `Please remove ${fileName} from quiz generation`,
+            isUser: true,
+            timestamp: new Date()
+          };
+          updatedChat.messages = [...updatedChat.messages, message];
+        }
+
+        return updatedChat;
+      }
+      return chat;
+    }));
+  };
+
+  const handleToggleFileSelection = (fileName) => {
+    if (!activeChatId) return;
+
+    setChatHistory(prev => prev.map(chat => {
+      if (chat.id === activeChatId && Array.isArray(chat.uploadedFiles)) {
+        return {
+          ...chat,
+          uploadedFiles: chat.uploadedFiles.map(file => 
+            file.name === fileName ? { ...file, selected: !file.selected } : file
+          )
+        };
+      }
+      return chat;
+    }));
+  };
+
+  // Get current chat's files with safety checks
+  const currentChat = chatHistory.find(chat => chat.id === activeChatId);
+  const currentFiles = Array.isArray(currentChat?.uploadedFiles) ? currentChat.uploadedFiles : [];
 
   return (
     <PageContainer>
@@ -106,6 +271,12 @@ const ChatPage = () => {
           activeFunction={activeFunction}
           onFunctionChange={setActiveFunction}
           settings={settings}
+          uploadedFiles={currentFiles}
+          onUploadFiles={activeFunction === 'quiz' ? null : handleUploadFiles}
+          onRemoveFile={handleRemoveFile}
+          chatHistory={chatHistory}
+          isSidebarOpen={isSidebarOpen}
+          onStartNewChat={handleStartNewChat}
         />
         <RightSidebar
           isOpen={isRightSidebarOpen}
@@ -113,6 +284,11 @@ const ChatPage = () => {
           activeFunction={activeFunction}
           settings={settings}
           onSettingsChange={handleSettingsChange}
+          uploadedFiles={currentFiles}
+          onRemoveFile={handleRemoveFile}
+          onToggleFileSelection={handleToggleFileSelection}
+          onUploadFiles={activeFunction === 'quiz' ? handleUploadFiles : null}
+          activeChatId={activeChatId}
         />
       </MainContent>
     </PageContainer>

@@ -1,42 +1,98 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import HistoryIcon from '@mui/icons-material/History';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import AddIcon from '@mui/icons-material/Add';
+import CreateIcon from '@mui/icons-material/Create';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
 
 const SidebarContainer = styled.div`
   width: ${props => props.isOpen ? '280px' : '0'};
   height: 100%;
-  background: white;
-  border-right: 1px solid #e0e0e0;
+  background: var(--background-primary);
+  border-right: 1px solid var(--border-color);
   transition: width 0.3s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
 `;
 
-const HeaderContainer = styled.div`
+const TopBar = styled.div`
   display: flex;
+  gap: 8px;
+  padding: 16px;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
 `;
 
-const HeaderTitle = styled.h3`
+const TopBarTitle = styled.h2`
   margin: 0;
-  color: #1a237e;
+  color: var(--text-primary);
   font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  flex: 1;
+`;
+
+const TopBarActions = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+const NewChatButton = styled.button`
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.15);
+
+  &:hover {
+    background: #0055b3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 102, 204, 0.15);
+  }
+
+  svg {
+    font-size: 20px;
+  }
+`;
+
+const SearchButton = styled(NewChatButton)`
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-secondary);
+  box-shadow: none;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.08);
+    transform: none;
+    box-shadow: none;
+  }
+
+  &:active {
+    background: rgba(0, 0, 0, 0.12);
+    transform: none;
+  }
 `;
 
 const ChatList = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 0 8px;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -76,17 +132,18 @@ const ChatTypeIndicator = styled.span`
 `;
 
 const ChatItem = styled.div`
-  padding: 12px;
+  padding: 12px 16px;
   border-radius: 8px;
   cursor: pointer;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: ${props => props.active ? '#f0f2ff' : 'transparent'};
+  transition: all 0.2s ease;
 
   &:hover {
-    background: #f0f2ff;
+    background: ${props => props.active ? '#f0f2ff' : '#f5f5f5'};
   }
 `;
 
@@ -99,7 +156,7 @@ const ChatItemLeft = styled.div`
 
 const ChatTitle = styled.div`
   font-size: 14px;
-  color: #333;
+  color: #1d1d1f;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -116,6 +173,12 @@ const IconButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: ${props => props.show ? 1 : 0};
+  transition: all 0.2s ease;
+
+  ${ChatItem}:hover & {
+    opacity: 1;
+  }
 
   &:hover {
     background: rgba(0, 0, 0, 0.05);
@@ -139,32 +202,51 @@ const ToggleButton = styled(IconButton)`
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 1;
   
   &:hover {
     background: #f0f2ff;
   }
 `;
 
-const NewChatButton = styled.button`
+const FloatingContainer = styled.div`
+  position: fixed;
+  left: 12px;
+  top: 24px;
+  display: ${props => props.show ? 'flex' : 'none'};
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+`;
+
+const FloatingTitle = styled.h2`
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+`;
+
+const FloatingNewChat = styled.button`
+  background: white;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid #1a237e;
-  border-radius: 6px;
-  background: #f0f2ff;
-  color: #1a237e;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 
   &:hover {
-    background: #1a237e;
-    color: white;
+    background: #f5f5f5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   svg {
-    font-size: 18px;
+    font-size: 24px;
+    color: var(--primary-color);
   }
 `;
 
@@ -177,24 +259,39 @@ const ChatSidebar = ({
   onChatDelete,
   onNewChat
 }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  
+  const filteredChats = chatHistory.filter(chat => 
+    chat.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const toggleSearch = () => {
+    setIsSearching(!isSearching);
+    if (!isSearching) {
+      setSearchTerm('');
+    }
+  };
+
   return (
     <>
       <ToggleButton onClick={onToggle} isOpen={isOpen}>
         <ChevronLeftIcon />
       </ToggleButton>
       <SidebarContainer isOpen={isOpen}>
-        <HeaderContainer>
-          <HeaderTitle>
-            <HistoryIcon fontSize="small" />
-            Chat History
-          </HeaderTitle>
-          <NewChatButton onClick={onNewChat}>
-            <AddIcon />
-            New Chat
-          </NewChatButton>
-        </HeaderContainer>
+        <TopBar>
+          <TopBarTitle>Chat History</TopBarTitle>
+          <TopBarActions>
+            <SearchButton onClick={toggleSearch}>
+              <SearchIcon fontSize="small" />
+            </SearchButton>
+            <NewChatButton onClick={onNewChat}>
+              <CreateIcon />
+            </NewChatButton>
+          </TopBarActions>
+        </TopBar>
         <ChatList>
-          {chatHistory.map((chat) => (
+          {filteredChats.map((chat) => (
             <ChatItem 
               key={chat.id}
               active={chat.id === activeChatId}
@@ -214,8 +311,9 @@ const ChatSidebar = ({
                   e.stopPropagation();
                   onChatDelete(chat.id);
                 }}
+                show={chat.id === activeChatId}
               >
-                <DeleteIcon fontSize="small" />
+                <DeleteIcon style={{ fontSize: '18px' }} />
               </IconButton>
             </ChatItem>
           ))}

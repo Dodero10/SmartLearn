@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 import io
 from tasks import save_pdf_to_minio, delete_pdf_and_images,download_pdf_from_minio
 import asyncio
+from chat_query.query import query,gen_quiz
 app = FastAPI()
 
 
@@ -100,3 +101,25 @@ async def delete_pdf(filename: str):
         
         else:
             raise HTTPException(status_code=500, detail="Lỗi không xác định")
+@app.post("/ai_tutol_query")
+def ai_tutol_query(question: str):
+    try:
+        async def stream_answer():
+            try:
+             
+                for chunk in query(question=question):
+                    yield chunk  
+            except Exception as e:
+                yield f"Lỗi server, vui lòng thử lại sau!"  
+
+        return StreamingResponse(stream_answer(), media_type="text/plain")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/gen_quizz")
+def gen_quizz(filenames:list[str]):
+    try:
+        quizzes=gen_quiz(filenames=filenames)
+        return quizzes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

@@ -1,15 +1,23 @@
 FROM python:3.10-slim
 
-RUN apt-get update && apt-get install -y \
+# Install system dependencies and clean up in a single layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     poppler-utils \
-    && rm -rf /var/lib/apt/lists/*
+    ffmpeg \
+    gcc \
+    python3-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY ./requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Install Python packages
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+# Copy application code
+COPY . .
 
 EXPOSE 8000
 

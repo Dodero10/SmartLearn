@@ -17,3 +17,10 @@ python-dotenv~=1.0.1
 openai
 google-cloud-texttospeech
 pydantic
+opencv-python-headless
+pdf2image
+numpy
+pydub
+imageio
+imageio-ffmpeg
+tqdm

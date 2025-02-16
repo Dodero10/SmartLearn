@@ -9,6 +9,7 @@ from file_processing.file_processing import chunking, parsing
 from gen_lecture.audio_generator import AudioGenerator
 from gen_lecture.script_generator import ScriptGenerator
 from gen_lecture.slide_processor import SlideProcessor
+from gen_lecture.video_generator import VideoGenerator
 from PIL import Image
 from utils.database_manage import DatabaseManager
 from utils.minio_utils import save_file_to_minio
@@ -135,12 +136,26 @@ def generate_lecture(file_data: bytes, filename: str):
             content_type="audio/mpeg"
         )
         
+        # 7. Generate video
+        video_generator = VideoGenerator(lecture_metadata, file_data, audio_data)
+        video_data = video_generator.generate_video()
+        
+        # 8. Save video to MinIO
+        video_filename = f"{filename.replace('.pdf', '')}.mp4"
+        save_file_to_minio(
+            file_data=video_data,
+            filename=video_filename,
+            bucket_name="videos",
+            content_type="video/mp4"
+        )
+        
         return {
             "status": "success",
             "message": "Lecture generation completed successfully",
             "metadata_file": metadata_filename,
             "script_file": script_filename,
-            "audio_file": audio_filename
+            "audio_file": audio_filename,
+            "video_file": video_filename
         }
         
     except Exception as e:

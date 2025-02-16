@@ -37,7 +37,7 @@ class QuestionType:
             "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
             "3. Đọc câu hỏi mà tôi đưa ra.\n"
             "4. Xác định xem câu hỏi đó có phải là câu chào hỏi thông thường (để làm quen, giới thiệu) hay không.\n"
-            "5. Nếu là prompt  mong muốn tìm hiểu hãy trả về 'true'.\n"
+            "5. Nếu là prompt mong muốn tìm hiểu hãy trả về 'true'.\n"
             "6. Nếu là câu chào hỏi thông thường, hãy trả lời là 'false'.\n"
             "7. Chỉ trả lời là 'true' hoặc 'false'.\n"
             "8. Không được thêm thông tin gì ngoài ngữ cảnh tôi cung cấp.\n"

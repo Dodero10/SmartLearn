@@ -1,13 +1,17 @@
 import io
-from config.minio_client import minio_client, bucket_name
-from config.celery_app import celery_app
 import os
-from pdf2image import convert_from_bytes
-from PIL import Image
-from fastapi.responses import StreamingResponse
-from file_processing.file_processing import parsing, chunking
-from utils.database_manage import DatabaseManager
+
 from chat_query.query import query
+from config.celery_app import celery_app
+from config.minio_client import bucket_name, bucket_name_slide, minio_client
+from fastapi.responses import StreamingResponse
+from file_processing.file_processing import chunking, parsing
+from gen_lecture.audio_generator import AudioGenerator
+from gen_lecture.script_generator import ScriptGenerator
+from gen_lecture.slide_processor import SlideProcessor
+from PIL import Image
+from utils.database_manage import DatabaseManager
+from utils.minio_utils import save_file_to_minio
 
 
 @celery_app.task(name='tasks.save_pdf_to_minio')
@@ -67,3 +71,82 @@ def delete_pdf_and_images(filename: str):
 
     except Exception as e:
         return str(e)
+    
+
+##### Dat
+@celery_app.task(name='tasks.upload_slide')
+def upload_slide(file_data: bytes, filename: str):
+    try:
+        result = save_file_to_minio(
+            file_data=file_data,
+            filename=filename,
+            bucket_name=bucket_name_slide,
+            content_type='application/pdf'
+        )
+        return result
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error uploading slide: {str(e)}"
+        }
+
+##### Dat
+
+@celery_app.task(name='tasks.generate_lecture')
+def generate_lecture(file_data: bytes, filename: str):
+    try:
+        # 1. Process slides and extract metadata
+        processor = SlideProcessor(file_data, filename)
+        lecture_metadata = processor.process_slides()
+        
+        # 2. Save metadata to MinIO
+        metadata_json = lecture_metadata.json()
+        metadata_filename = f"{filename.replace('.pdf', '')}_metadata.json"
+        save_file_to_minio(
+            file_data=metadata_json.encode(),
+            filename=metadata_filename,
+            bucket_name="metadata",
+            content_type="application/json"
+        )
+        
+        # 3. Generate script
+        script_generator = ScriptGenerator(lecture_metadata)
+        script = script_generator.generate_script()
+        
+        # 4. Save script to MinIO
+        script_filename = f"{filename.replace('.pdf', '')}_script.txt"
+        save_file_to_minio(
+            file_data=script.encode(),
+            filename=script_filename,
+            bucket_name="scripts",
+            content_type="text/plain"
+        )
+        
+        # 5. Generate audio
+        audio_generator = AudioGenerator(lecture_metadata)
+        audio_data = audio_generator.generate_audio()
+        
+        # 6. Save audio to MinIO
+        audio_filename = f"{filename.replace('.pdf', '')}.mp3"
+        save_file_to_minio(
+            file_data=audio_data,
+            filename=audio_filename,
+            bucket_name="audio",
+            content_type="audio/mpeg"
+        )
+        
+        return {
+            "status": "success",
+            "message": "Lecture generation completed successfully",
+            "metadata_file": metadata_filename,
+            "script_file": script_filename,
+            "audio_file": audio_filename
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error generating lecture: {str(e)}"
+        }
+
+##### Dat

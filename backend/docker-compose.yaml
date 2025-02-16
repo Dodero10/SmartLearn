@@ -12,6 +12,7 @@ services:
     volumes:
       - .:/app
       - chromadb_data:/app/chromadb
+      - ./google-credentials.json:/app/google-credentials.json
     depends_on:
       - redis
       - minio
@@ -28,6 +29,7 @@ services:
     volumes:
       - .:/app
       - chromadb_data:/app/chromadb
+      - ./google-credentials.json:/app/google-credentials.json
     env_file:
       - ./.env
     environment:

@@ -9,10 +9,11 @@ langchain_core
 pymupdf
 Pillow
 langchain-text-splitters
-PyPDF2
+pdfplumber
 langchain-openai
 langchain_community
-pdf2image
 chromadb
 python-dotenv~=1.0.1
 openai
+google-cloud-texttospeech
+pydantic

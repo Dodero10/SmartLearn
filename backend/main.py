@@ -10,7 +10,7 @@ from config.minio_client import bucket_name, minio_client
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from tasks import (delete_pdf_and_images, download_pdf_from_minio,
-                   save_pdf_to_minio)
+                   generate_lecture, save_pdf_to_minio, upload_slide)
 
 app = FastAPI()
 
@@ -120,7 +120,6 @@ async def ai_tutor_query(question: str):
                 # Convert sync generator to async
                 for chunk in query(question=question):
                     yield chunk
-                    print("s4", chunk)
                     # Add a small delay to prevent blocking
                     await asyncio.sleep(0.01)
             except Exception as e:
@@ -145,3 +144,36 @@ def gen_quizz(filenames: list[str]):
         return quizzes
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+####### Dat
+
+@app.post("/upload_slide")
+async def handle_upload_slide(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        return {"error": "Chỉ chấp nhận file PDF"}
+
+    file_data = await file.read()
+
+    filename = file.filename
+
+    task = upload_slide.delay(file_data, filename)
+    
+    return {"task_id": task.id, "message": "File đang được tải lên"}
+    
+
+
+
+@app.post("/generate_lecture")
+async def handle_generate_lecture(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        return {"error": "Chỉ chấp nhận file PDF"}
+
+    file_data = await file.read()
+    filename = file.filename
+
+    task = generate_lecture.delay(file_data, filename)
+    return {"task_id": task.id, "message": "Đang xử lý lecture"}
+
+
+####### Dat

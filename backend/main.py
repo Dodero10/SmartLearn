@@ -1,6 +1,7 @@
 import asyncio
 import io
 import os
+from datetime import datetime
 
 from celery import chain
 from celery.result import AsyncResult
@@ -8,11 +9,18 @@ from chat_query.query import gen_quiz, query
 from config.celery_app import celery_app
 from config.minio_client import bucket_name, minio_client
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
-from tasks import (delete_pdf_and_images, download_pdf_from_minio,
-                   generate_lecture, save_pdf_to_minio, upload_slide, create_chat_task, create_project_task, delete_chat_task, delete_file_in_chat_task, get_chat_message_task, get_history_task, get_setting_task, push_setting_task, search_chat_task, send_message_task, update_name_chat_task, update_name_project_task, upload_file_db_task)
-from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from generaldb.models import User
+from passlib.hash import bcrypt
+from pydantic import BaseModel, EmailStr, Field
+from tasks import (create_chat_task, create_project_task, delete_chat_task,
+                   delete_file_in_chat_task, delete_pdf_and_images,
+                   download_pdf_from_minio, generate_lecture,
+                   get_chat_message_task, get_history_task, get_setting_task,
+                   push_setting_task, save_pdf_to_minio, search_chat_task,
+                   send_message_task, update_name_chat_task,
+                   update_name_project_task, upload_file_db_task, upload_slide)
 
 app = FastAPI(
     title="Chat API",
@@ -301,3 +309,71 @@ async def handle_task_result(task):
             else:
                 raise HTTPException(status_code=500, detail="Task failed")
         await asyncio.sleep(0.1)
+
+# User Pydantic models
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+
+class UserResponse(BaseModel):
+    user_id: int
+    username: str
+    email: str
+    created_at: datetime
+
+@app.post("/users/", response_model=UserResponse)
+async def create_user(user: UserCreate):
+    try:
+        # Generate a new user_id
+        last_user = User.objects.order_by('-user_id').first()
+        new_user_id = 1 if not last_user else last_user.user_id + 1
+        
+        # Hash the password
+        hashed_password = bcrypt.hash(user.password)
+        
+        # Create new user
+        db_user = User(
+            user_id=new_user_id,
+            username=user.username,
+            email=user.email,
+            password_hash=hashed_password
+        )
+        db_user.save()
+        
+        return {
+            "user_id": db_user.user_id,
+            "username": db_user.username,
+            "email": db_user.email,
+            "created_at": db_user.created_at
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/users/", response_model=list[UserResponse])
+async def get_users():
+    try:
+        users = User.objects.all()
+        return [{
+            "user_id": user.user_id,
+            "username": user.username,
+            "email": user.email,
+            "created_at": user.created_at
+        } for user in users]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: int):
+    try:
+        user = User.objects.get(user_id=user_id)
+        return {
+            "user_id": user.user_id,
+            "username": user.username,
+            "email": user.email,
+            "created_at": user.created_at
+        }
+    except User.DoesNotExist:
+        raise HTTPException(status_code=404, detail="User not found")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

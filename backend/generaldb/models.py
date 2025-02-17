@@ -1,19 +1,13 @@
-from mongoengine import (
-    Document, 
-    StringField, 
-    DateTimeField,
-    ReferenceField, 
-    BooleanField,
-    IntField,
-    ListField,
-    EmbeddedDocument,
-    EmbeddedDocumentField,
-    EnumField
-)
 from datetime import datetime
 from enum import Enum
-from mongoengine import connect
-from .config import MONGODB_URI, DATABASE_NAME
+
+from mongoengine import (BooleanField, DateTimeField, Document, EmailField,
+                         EmbeddedDocument, EmbeddedDocumentField, EnumField,
+                         IntField, ListField, ReferenceField, StringField,
+                         connect)
+
+from .config import DATABASE_NAME, MONGODB_URI
+
 
 # Enum definitions
 class Role(str, Enum):
@@ -42,10 +36,19 @@ class Choice(EmbeddedDocument):
 
 # Document definitions
 class User(Document):
+    user_id = IntField(primary_key=True)
     username = StringField(required=True, unique=True)
-    email = StringField(required=True, unique=True)
+    email = EmailField(required=True, unique=True)
     password_hash = StringField(required=True)
     created_at = DateTimeField(default=datetime.utcnow)
+
+    meta = {
+        'collection': 'users',
+        'indexes': [
+            'username',
+            'email'
+        ]
+    }
 
 class Project(Document):
     user_id = ReferenceField(User, required=True)

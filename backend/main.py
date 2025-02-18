@@ -28,8 +28,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Định nghĩa model cho request body
+
+
 class TutorQuery(BaseModel):
     question: str
+
 
 app = FastAPI(
     title="Chat API",
@@ -150,31 +153,17 @@ async def ai_tutor_query_options():
     return {"message": "OK"}
 
 @app.post("/ai_tutor_query")
-async def ai_tutor_query(request: Request, query_data: TutorQuery):
+async def ai_tutor_query(query_data: TutorQuery):
     try:
-        # Log request body
-        body = await request.body()
-        logger.info(f"Received request body: {body.decode()}")
-        logger.info(f"Parsed query_data: {query_data}")
-
-        async def stream_response():
+        def stream_answer():
             try:
-                # Convert sync generator to async
-                for char in query(question=query_data.question):
-                    # Trả về từng ký tự
-                    yield f"data: {char}\n\n"
-                    await asyncio.sleep(0.01)  # Delay giữa các ký tự
-
+                for chunk in query(question=query_data.question):
+                    yield f"data: {chunk}\n\n"
             except Exception as e:
-                error_msg = f"Error during query processing: {str(e)}"
-                logger.error(error_msg)
-                # Gửi lỗi từng ký tự một
-                for char in error_msg:
-                    yield f"data: {char}\n\n"
-                    await asyncio.sleep(0.01)
+                yield f"data: Lỗi server, vui lòng thử lại sau!\n\n"
 
         return StreamingResponse(
-            stream_response(),
+            stream_answer(),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -186,19 +175,21 @@ async def ai_tutor_query(request: Request, query_data: TutorQuery):
                 "Access-Control-Allow-Credentials": "true",
             }
         )
-    except Exception as e:
-        error_msg = f"Error in endpoint: {str(e)}"
-        logger.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/gen_quizz")
-def gen_quizz(filenames: list[str]):
+def gen_quizz(filenames:list[str]):
     try:
-        quizzes = gen_quiz(filenames=filenames)
+        quizzes=gen_quiz(filenames=filenames)
         return quizzes
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+@app.get("/test")
+def test():
+    data=DatabaseManager()
+    return data.collection.get()
 
 
 ####### Dat

@@ -3,7 +3,7 @@ import io
 import logging
 import os
 from datetime import datetime
-
+from utils.database_manage import DatabaseManager
 from celery import chain
 from celery.result import AsyncResult
 from chat_query.query import gen_quiz, query

@@ -1,5 +1,6 @@
 import asyncio
 import io
+import logging
 import os
 from datetime import datetime
 
@@ -8,7 +9,7 @@ from celery.result import AsyncResult
 from chat_query.query import gen_quiz, query
 from config.celery_app import celery_app
 from config.minio_client import bucket_name, minio_client
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from generaldb.models import User
@@ -22,18 +23,28 @@ from tasks import (create_chat_task, create_project_task, delete_chat_task,
                    send_message_task, update_name_chat_task,
                    update_name_project_task, upload_file_db_task, upload_slide)
 
+# Cấu hình logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Định nghĩa model cho request body
+class TutorQuery(BaseModel):
+    question: str
+
 app = FastAPI(
     title="Chat API",
     description="API for chat application",
     version="1.0.0"
 )
 
+# Cấu hình CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -134,28 +145,50 @@ async def delete_pdf(filename: str):
             raise HTTPException(status_code=500, detail="Lỗi không xác định")
 
 
+@app.options("/ai_tutor_query")
+async def ai_tutor_query_options():
+    return {"message": "OK"}
+
 @app.post("/ai_tutor_query")
-async def ai_tutor_query(question: str):
+async def ai_tutor_query(request: Request, query_data: TutorQuery):
     try:
+        # Log request body
+        body = await request.body()
+        logger.info(f"Received request body: {body.decode()}")
+        logger.info(f"Parsed query_data: {query_data}")
+
         async def stream_response():
             try:
                 # Convert sync generator to async
-                for chunk in query(question=question):
-                    yield chunk
-                    # Add a small delay to prevent blocking
-                    await asyncio.sleep(0.01)
+                for char in query(question=query_data.question):
+                    # Trả về từng ký tự
+                    yield f"data: {char}\n\n"
+                    await asyncio.sleep(0.01)  # Delay giữa các ký tự
+
             except Exception as e:
                 error_msg = f"Error during query processing: {str(e)}"
-                print(error_msg)  # Log the error
-                yield f"Lỗi server: {error_msg}"
+                logger.error(error_msg)
+                # Gửi lỗi từng ký tự một
+                for char in error_msg:
+                    yield f"data: {char}\n\n"
+                    await asyncio.sleep(0.01)
 
         return StreamingResponse(
             stream_response(),
-            media_type="text/plain"
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Credentials": "true",
+            }
         )
     except Exception as e:
         error_msg = f"Error in endpoint: {str(e)}"
-        print(error_msg)  # Log the error
+        logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
 
 

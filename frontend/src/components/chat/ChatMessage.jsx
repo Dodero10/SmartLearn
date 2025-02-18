@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Avatar } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 
@@ -17,37 +18,30 @@ const FileUploadMessage = styled.div`
   gap: 8px;
 `;
 
-const MessageWrapper = styled.div`
+const MessageContainer = styled.div`
   display: flex;
   gap: 16px;
-  padding: 16px 24px;
-  background: ${props => props.isUser ? 'transparent' : '#ffffff'};
-  border-radius: 8px;
-  max-width: 900px;
-  margin: 0 auto;
-  width: 100%;
-`;
-
-const Avatar = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: ${props => props.isUser ? '#1a237e' : '#4CAF50'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
+  align-items: flex-start;
+  max-width: 100%;
 `;
 
 const MessageContent = styled.div`
   flex: 1;
-  color: ${props => props.isUser ? '#1a237e' : '#000000'};
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  background: ${props => props.isUser ? 'var(--primary-color)' : 'var(--message-background, #f0f0f0)'};
+  color: ${props => props.isUser ? 'white' : 'var(--text-primary)'};
+  padding: 12px 16px;
+  border-radius: 12px;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.5;
+  max-width: calc(100% - 80px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 
   p {
     margin: 0 0 16px;
+    white-space: pre-wrap;
     &:last-child {
       margin-bottom: 0;
     }
@@ -63,6 +57,7 @@ const MessageContent = styled.div`
 
   pre {
     margin: 16px 0;
+    white-space: pre-wrap;
     
     code {
       background: transparent;
@@ -90,6 +85,12 @@ const MessageContent = styled.div`
       background-color: #f5f5f5;
     }
   }
+`;
+
+const StyledAvatar = styled(Avatar)`
+  width: 40px !important;
+  height: 40px !important;
+  background-color: ${props => props.isUser ? 'var(--primary-color)' : '#666'} !important;
 `;
 
 const CodeBlock = ({ language, value }) => {
@@ -122,16 +123,17 @@ const CodeBlock = ({ language, value }) => {
  */
 const ChatMessage = React.memo(React.forwardRef(({ message, isUser }, ref) => {
   return (
-    <MessageWrapper isUser={isUser}>
-      <Avatar isUser={isUser}>
+    <MessageContainer>
+      <StyledAvatar isUser={isUser}>
         {isUser ? <PersonIcon /> : <SmartToyIcon />}
-      </Avatar>
+      </StyledAvatar>
       <MessageContent isUser={isUser}>
         {message.isFileUpload ? (
           <FileUploadMessage>{message.text}</FileUploadMessage>
         ) : (
           <ReactMarkdown
             components={{
+              p: ({ children }) => <p style={{ whiteSpace: 'pre-wrap' }}>{children}</p>,
               code: ({ node, inline, className, children, ...props }) => {
                 const match = /language-(\w+)/.exec(className || '');
                 return !inline && match ? (
@@ -152,7 +154,7 @@ const ChatMessage = React.memo(React.forwardRef(({ message, isUser }, ref) => {
           </ReactMarkdown>
         )}
       </MessageContent>
-    </MessageWrapper>
+    </MessageContainer>
   );
 }));
 

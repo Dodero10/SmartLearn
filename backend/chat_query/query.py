@@ -1,52 +1,53 @@
-import asyncio
 import os
 import sys
 import time
-
+import asyncio
 from chat_query.question_type import QuestionType
 from utils.database_manage import DatabaseManager
 
-
 def query(question: str):
-    print("Starting query function")
     client = QuestionType()
     try:
+        print(2)
         question_type = client.question_classification(question=question)
-        print(f"Question type: {question_type}")
-        
+        print(question_type)
         if question_type == "true":
-            try:
-                print("Processing knowledge question")
-                document_query = client.get_document_query(question)
-                print(f"Document query: {document_query}")
-                
-                database_manager = DatabaseManager()
-                print("Querying database")
-                document = database_manager.query_collection(questions=document_query)
-                print(f"Database response length: {len(document) if document else 0}")
 
+            try:
+
+                document_query = client.get_document_query(question)
+                print(document_query)
+                database_manager = DatabaseManager()
+
+                document = database_manager.query_collection(questions=document_query)
+                print(document)
                 collected_result = ""
                 for chunk in client.query_from_chatgpt(question=question, info=document):
                     collected_result += chunk
                     yield chunk
-                
-                if "Không tìm thấy dữ liệu về câu hỏi." in collected_result:
-                    print("No data found, generating relevant questions")
-                    yield "\n"
-                    for chunk in client.query_relevant_question(question=question, info=document):
-                        yield chunk
+              
+                if "Xin lỗi bạn, có thể dữ liệu được cung cấp không có thông tin về kiến thức này." in collected_result:
+                    if(document!=None and len(document[:3])>0):
+
+                        yield "\nCó thể bạn sẽ quan tâm đến các thông tin sau: "
+                        infos=document[:3]
+                        i=1
+                        for info in infos:
+                            yield f"\n{i}. "
+                            i=i+1
+                            for chunk in client.query_relevant_question(info):
+                                yield chunk
+ 
 
             except Exception as err:
-                print(f"Error in knowledge processing: {str(err)}")
-                yield f'Error processing question: {str(err)}'
+                yield f'Error format from answer: {err}'
         else:
-            print("Processing greeting")
             answer = client.query_greeting(question=question)
+            print(answer)
             yield answer
             
     except Exception as e:
-        print(f"Error in main query function: {str(e)}")
-        yield f"Error in query: {str(e)}"
+        yield f"Error when query: {e}"
 def gen_quiz(filenames:list[str]):
     client = QuestionType()
     content=[]
@@ -67,7 +68,4 @@ def gen_quiz(filenames:list[str]):
         
         quizzs.extend(quizz)  
 
-    return quizzs    
-
-
-
+    return quizzs

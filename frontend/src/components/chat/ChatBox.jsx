@@ -155,6 +155,9 @@ const MessagesContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -176,6 +179,19 @@ const MessagesContainer = styled.div`
     border: 2px solid transparent;
     background-clip: padding-box;
   }
+`;
+
+const MessageContent = styled.div`
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  line-height: 1.5;
+  font-size: 16px;
+  padding: 12px 16px;
+  background: var(--message-background);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 `;
 
 const InputWrapper = styled.div`
@@ -363,6 +379,13 @@ const ChatSection = styled.div`
   flex-direction: column;
 `;
 
+const CHAT_FUNCTIONS = {
+  CHAT: 'chat',
+  AI_TUTOR: 'ai_tutor',
+  VIDEO: 'video',
+  QUIZ: 'quiz'
+};
+
 /**
  * Component chính xử lý giao diện chat
  * Bao gồm:
@@ -387,7 +410,7 @@ const ChatBox = React.forwardRef(({
   // State lưu trữ danh sách tin nhắn
   const [messages, setMessages] = useState([]);
   // State lưu trữ nội dung đang nhập
-  const [input, setInput] = useState('');
+  const [inputValue, setInputValue] = useState('');
   // State đánh dấu đang gửi tin nhắn
   const [isLoading, setIsLoading] = useState(false);
   // Ref để scroll đến tin nhắn cuối cùng
@@ -404,6 +427,11 @@ const ChatBox = React.forwardRef(({
   const [quizData, setQuizData] = useState(null);
   const [showQuizInterface, setShowQuizInterface] = useState(false);
   const [showVideoInterface, setShowVideoInterface] = useState(false);
+  const [selectedFunction, setSelectedFunction] = useState(CHAT_FUNCTIONS.CHAT);
+  const modelDropdownRef = useRef(null);
+  const [showVideo, setShowVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [showQuiz, setShowQuiz] = useState(false);
   
   // Kiểm tra xem cuộc hội thoại đã bắt đầu chưa
   const hasStartedChat = messages.length > 0;
@@ -412,6 +440,8 @@ const ChatBox = React.forwardRef(({
     { id: 'gpt-4', name: 'GPT-4' },
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
     { id: 'claude-3', name: 'Claude 3' },
+    { id: 'deepseek', name: 'DeepSeek' },
+    { id: 'Gemini-1.5-Flash', name: 'Gemini 1.5 Flash' },
   ];
 
   const handleModelSelect = (modelId) => {
@@ -430,7 +460,7 @@ const ChatBox = React.forwardRef(({
   }, [activeChatId, chatHistory]);
 
   const handleInputChange = (e) => {
-    setInput(e.target.value);
+    setInputValue(e.target.value);
     e.target.style.height = 'auto';
     e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
   };
@@ -475,52 +505,84 @@ const ChatBox = React.forwardRef(({
    * - Cập nhật UI với từng token nhận được
    */
   const handleSubmit = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading) return;
 
-    const userMessage = input.trim();
-    setInput('');
+    const userMessage = {
+      id: uuidv4(),
+      text: inputValue,
+      isUser: true
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
     setIsLoading(true);
-    streamedMessageRef.current = '';
 
-    setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
+    const botMessage = {
+      id: uuidv4(),
+      text: '',
+      isUser: false
+    };
 
-    if (!activeChatId && messages.length === 0) {
-      onNewChat({
-        id: threadId.current,
-        title: userMessage.slice(0, 30) + (userMessage.length > 30 ? '...' : ''),
-        timestamp: new Date(),
-      });
-    }
+    setMessages(prev => [...prev, botMessage]);
 
     try {
-      setMessages(prev => [...prev, { text: '', isUser: false }]);
-
-      // Xử lý khác nhau dựa trên function đang active
-      switch (activeFunction) {
-        case 'video':
-          await handleVideoConversion(userMessage);
+      switch (selectedFunction) {
+        case CHAT_FUNCTIONS.CHAT:
+          await handleNormalChat(userMessage.text, botMessage.id);
           break;
-        case 'quiz':
-          await handleQuizGeneration(userMessage);
+        case CHAT_FUNCTIONS.AI_TUTOR:
+          await handleTutorChat(userMessage.text, botMessage.id);
+          break;
+        case CHAT_FUNCTIONS.VIDEO:
+          await handleVideoConversion(userMessage.text);
+          break;
+        case CHAT_FUNCTIONS.QUIZ:
+          await handleQuizGeneration(userMessage.text);
           break;
         default:
-          await handleTutorChat(userMessage);
+          await handleNormalChat(userMessage.text, botMessage.id);
       }
-
     } catch (error) {
-      console.error('Error:', error);
-      setMessages(prev => [...prev, { 
-        text: 'Sorry, I encountered an error processing your request.',
-        isUser: false 
-      }]);
-    } finally {
-      setIsLoading(false);
+      console.error('Error in chat:', error);
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessage.id 
+            ? { ...msg, text: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.' }
+            : msg
+        )
+      );
     }
+
+    setIsLoading(false);
   };
 
-  const handleTutorChat = async (message) => {
-    // Mock response for AI Tutor
-    setMessages(prev => [...prev, { text: 'Hello', isUser: false }]);
+  const handleTutorChat = async (message, botMessageId) => {
+    try {
+      await chatService.sendAITutorQuery(
+        message,
+        (token) => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, text: msg.text + token }
+                : msg
+            )
+          );
+        },
+        (error) => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, text: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.' }
+                : msg
+            )
+          );
+        }
+      );
+    } catch (error) {
+      console.error('Error in AI Tutor chat:', error);
+      throw error;
+    }
   };
 
   const handleVideoConversion = async (message) => {
@@ -598,13 +660,37 @@ const ChatBox = React.forwardRef(({
 
   // Function descriptions for info text
   const getFunctionInfo = () => {
-    switch (activeFunction) {
-      case 'video':
-        return 'Upload slides to convert them into a video lecture';
-      case 'quiz':
-        return 'Generate practice quizzes from your learning materials';
+    switch (selectedFunction) {
+      case CHAT_FUNCTIONS.CHAT:
+        return {
+          icon: <SchoolIcon />,
+          title: 'Chat thông thường',
+          placeholder: 'Nhập tin nhắn...'
+        };
+      case CHAT_FUNCTIONS.AI_TUTOR:
+        return {
+          icon: <HelpIcon />,
+          title: 'AI Tutor',
+          placeholder: 'Hỏi AI Tutor của bạn...'
+        };
+      case CHAT_FUNCTIONS.VIDEO:
+        return {
+          icon: <VideoLibraryIcon />,
+          title: 'Tạo video',
+          placeholder: 'Tải lên slide để tạo video...'
+        };
+      case CHAT_FUNCTIONS.QUIZ:
+        return {
+          icon: <QuizIcon />,
+          title: 'Tạo quiz',
+          placeholder: 'Tải lên tài liệu để tạo quiz...'
+        };
       default:
-        return 'Ask questions about your course materials or upload documents for tutoring';
+        return {
+          icon: <SchoolIcon />,
+          title: 'Chat thông thường',
+          placeholder: 'Nhập tin nhắn...'
+        };
     }
   };
 
@@ -621,32 +707,37 @@ const ChatBox = React.forwardRef(({
 
   const handleFunctionChange = (newFunction) => {
     onFunctionChange(newFunction);
-    setInput('');
+    setInputValue('');
     streamedMessageRef.current = '';
     setVideoId(null);
     setTranscript(null);
     setShowVideoInterface(false);
     setShowQuizInterface(false);
+    setSelectedFunction(newFunction);
   };
 
   // Cập nhật placeholder text dựa trên function đang active
   const getPlaceholderText = () => {
-    switch (activeFunction) {
-      case 'video':
-        return "Upload slides or enter instructions for video conversion...";
-      case 'quiz':
-        return "Upload materials or enter topics for quiz generation...";
+    switch (selectedFunction) {
+      case CHAT_FUNCTIONS.CHAT:
+        return "Nhập tin nhắn...";
+      case CHAT_FUNCTIONS.AI_TUTOR:
+        return "Hỏi AI Tutor của bạn...";
+      case CHAT_FUNCTIONS.VIDEO:
+        return "Tải lên slide để tạo video...";
+      case CHAT_FUNCTIONS.QUIZ:
+        return "Tải lên tài liệu để tạo quiz...";
       default:
-        return "Ask a question about your materials...";
+        return "Nhập tin nhắn...";
     }
   };
 
   // Cập nhật accepted file types dựa trên function đang active
   const getAcceptedFileTypes = () => {
-    switch (activeFunction) {
-      case 'video':
+    switch (selectedFunction) {
+      case CHAT_FUNCTIONS.VIDEO:
         return ".pdf,.pptx";
-      case 'quiz':
+      case CHAT_FUNCTIONS.QUIZ:
         return ".pdf,.doc,.docx,.txt,.pptx";
       default:
         return ".pdf,.doc,.docx,.txt,.pptx";
@@ -657,16 +748,47 @@ const ChatBox = React.forwardRef(({
   React.useImperativeHandle(ref, () => ({
     resetChat: () => {
       setMessages([]);
-      setInput('');
+      setInputValue('');
       setIsLoading(false);
       threadId.current = uuidv4();
       streamedMessageRef.current = '';
     }
   }));
 
+  const handleNormalChat = async (message, botMessageId) => {
+    try {
+      await chatService.sendMessageStream(
+        message,
+        threadId.current,
+        selectedModel,
+        (token) => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, text: msg.text + token }
+                : msg
+            )
+          );
+        },
+        (error) => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, text: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.' }
+                : msg
+            )
+          );
+        }
+      );
+    } catch (error) {
+      console.error('Error in normal chat:', error);
+      throw error;
+    }
+  };
+
   return (
     <ChatContainer>
-      {activeFunction === 'video' && showVideoInterface && videoId ? (
+      {selectedFunction === CHAT_FUNCTIONS.VIDEO && showVideoInterface && videoId ? (
         <VideoModeContainer>
           <VideoSection>
             <VideoPlayer
@@ -683,8 +805,8 @@ const ChatBox = React.forwardRef(({
                   </NewChatButton>
                 )}
                 <HeaderTitle>
-                  {activeFunction === 'video' ? 'Slide to Video' : 
-                   activeFunction === 'quiz' ? 'Quiz Generator' : 
+                  {selectedFunction === CHAT_FUNCTIONS.VIDEO ? 'Slide to Video' : 
+                   selectedFunction === CHAT_FUNCTIONS.QUIZ ? 'Quiz Generator' : 
                    'AI Tutor Chat'}
                 </HeaderTitle>
               </HeaderLeft>
@@ -714,7 +836,7 @@ const ChatBox = React.forwardRef(({
                   <AttachFileIcon />
                 </FileUploadButton>
                 <TextArea
-                  value={input}
+                  value={inputValue}
                   onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
                   placeholder={uploadedFiles.length > 0 ? "Provide instructions for video conversion..." : "Upload your slides first..."}
@@ -722,7 +844,7 @@ const ChatBox = React.forwardRef(({
                 />
                 <IconButton
                   onClick={handleSubmit}
-                  disabled={isLoading || !input.trim()}
+                  disabled={isLoading || !inputValue.trim()}
                 >
                   <SendIcon />
                 </IconButton>
@@ -730,7 +852,7 @@ const ChatBox = React.forwardRef(({
             </InputWrapper>
           </ChatSection>
         </VideoModeContainer>
-      ) : activeFunction === 'quiz' && showQuizInterface && quizData ? (
+      ) : selectedFunction === CHAT_FUNCTIONS.QUIZ && showQuizInterface && quizData ? (
         <QuizInterface
           quiz={quizData}
           settings={settings}
@@ -746,8 +868,8 @@ const ChatBox = React.forwardRef(({
                 </NewChatButton>
               )}
               <HeaderTitle>
-                {activeFunction === 'video' ? 'Slide to Video' : 
-                 activeFunction === 'quiz' ? 'Quiz Generator' : 
+                {selectedFunction === CHAT_FUNCTIONS.VIDEO ? 'Slide to Video' : 
+                 selectedFunction === CHAT_FUNCTIONS.QUIZ ? 'Quiz Generator' : 
                  'AI Tutor Chat'}
               </HeaderTitle>
             </HeaderLeft>
@@ -759,7 +881,7 @@ const ChatBox = React.forwardRef(({
                   transition: 'transform 0.3s ease'
                 }} />
               </ModelButton>
-              <ModelDropdown isOpen={isModelDropdownOpen}>
+              <ModelDropdown isOpen={isModelDropdownOpen} ref={modelDropdownRef}>
                 {models.map(model => (
                   <ModelOption
                     key={model.id}
@@ -794,24 +916,24 @@ const ChatBox = React.forwardRef(({
           <FunctionBar>
             <FunctionContainer>
               <FunctionButton
-                active={activeFunction === 'tutor'}
-                onClick={() => handleFunctionChange('tutor')}
+                active={selectedFunction === CHAT_FUNCTIONS.AI_TUTOR}
+                onClick={() => handleFunctionChange(CHAT_FUNCTIONS.AI_TUTOR)}
                 disabled={hasStartedChat}
               >
                 <SchoolIcon />
                 AI Tutor
               </FunctionButton>
               <FunctionButton
-                active={activeFunction === 'video'}
-                onClick={() => handleFunctionChange('video')}
+                active={selectedFunction === CHAT_FUNCTIONS.VIDEO}
+                onClick={() => handleFunctionChange(CHAT_FUNCTIONS.VIDEO)}
                 disabled={hasStartedChat}
               >
                 <VideoLibraryIcon />
                 Slide to Video
               </FunctionButton>
               <FunctionButton
-                active={activeFunction === 'quiz'}
-                onClick={() => handleFunctionChange('quiz')}
+                active={selectedFunction === CHAT_FUNCTIONS.QUIZ}
+                onClick={() => handleFunctionChange(CHAT_FUNCTIONS.QUIZ)}
                 disabled={hasStartedChat}
               >
                 <QuizIcon />
@@ -820,7 +942,7 @@ const ChatBox = React.forwardRef(({
             </FunctionContainer>
             <InfoText>
               <HelpIcon style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }} />
-              {getFunctionInfo()}
+              {getFunctionInfo().title}
             </InfoText>
           </FunctionBar>
           <InputWrapper>
@@ -839,7 +961,7 @@ const ChatBox = React.forwardRef(({
                 <AttachFileIcon />
               </FileUploadButton>
               <TextArea
-                value={input}
+                value={inputValue}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 placeholder={getPlaceholderText()}
@@ -847,7 +969,7 @@ const ChatBox = React.forwardRef(({
               />
               <IconButton
                 onClick={handleSubmit}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !inputValue.trim()}
               >
                 <SendIcon />
               </IconButton>

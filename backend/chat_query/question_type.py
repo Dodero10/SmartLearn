@@ -1,7 +1,6 @@
-import json
 import os
 import sys
-
+import json
 from utils.gpt_call import ChatGPTGen
 
 
@@ -34,18 +33,17 @@ class QuestionType:
     def question_classification(self, question: str) -> str:
         system_contents = (
             "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
-            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
+            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau bao gồm: Toán, Vật lý, Hóa học, Sinh học,Văn học, Lịch sử, Địa lý, Giáo dục công dân, Công nghệ, Tin học.\n"
             "3. Đọc câu hỏi mà tôi đưa ra.\n"
-            "4. Xác định xem câu hỏi đó có phải là câu chào hỏi thông thường (để làm quen, giới thiệu) hay không.\n"
-            "5. Nếu là prompt mong muốn tìm hiểu hãy trả về 'true'.\n"
-            "6. Nếu là câu chào hỏi thông thường, hãy trả lời là 'false'.\n"
-            "7. Chỉ trả lời là 'true' hoặc 'false'.\n"
-            "8. Không được thêm thông tin gì ngoài ngữ cảnh tôi cung cấp.\n"
-            # "9. Ví dụ:\n"
-            # "   - 'Xin chào, bạn có khỏe không?' -> 'false'\n"
-            # "   - 'Định lý Pythagoras là gì?' -> 'true'\n"
-            # "   - 'Hôm nay thời tiết thế nào?' -> 'false'\n"
-            # "   - 'Ai là người phát minh ra bóng đèn?' -> 'true'"
+            "4. Nếu là câu hỏi cần kiến thức để trả lời, hãy trả về true.\n"
+            "5. Nếu là câu chào hỏi, làm quen, hỏi thăm thông thường, hãy trả lời là false.\n"
+            "6. Chỉ trả lời là true hoặc false.\n"
+            "7. Không được thêm thông tin gì ngoài ngữ cảnh tôi cung cấp.\n"
+            "8. Ví dụ:\n"
+            "   - 'Xin chào, bạn có khỏe không?' -> false\n"
+            "   - 'Định lý Pythagoras là gì?' -> true\n"
+            "   - 'Hôm nay thời tiết thế nào?' -> true\n"
+            "   - 'Ai là người phát minh ra bóng đèn?' -> true"
         )
 
         messages = create_message(system_contents, user_contents=question)
@@ -54,30 +52,32 @@ class QuestionType:
     def improve_question(self, question: str) -> str:
         system_contents =  (
             "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
-            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
+            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau gồm: Toán, Vật lý, Hóa học,Văn học, Sinh học, Lịch sử, Địa lý, Giáo dục công dân, Công nghệ, Tin học\n"
             "3. Tóm tắt câu hỏi được đưa ra.\n"
-            "4. Đưa ra chủ đề chính mà câu hỏi đề cập đến.\n"
-            "5. Trả kết quả về dạng json chứa hai đối tượng là summary và topic, tương ứng với 3 và 4.\n"
+            "4. Đưa ra danh sách các đối tượng quan trọng mà câu hỏi đề cập đến.\n"
+            "5. Trả kết quả về dạng json chứa hai đối tượng là summary và items, tương ứng với 3 và 4.\n"
             "6. Chỉ đưa ra nội dung tôi yêu cầu, không trả lời gì thêm.\n"
             "7. Không được thêm thông tin gì ngoài ngữ cảnh tôi cung cấp.\n"
-            "8. Ví dụ về câu trả lời: {'summary': 'Giải thích định lý Pythagoras.', 'topic': 'Định lý Pythagoras'}"
+            "8. Kết quả trả về ở định dạng json."
+            "9. Ví dụ về câu hỏi và câu trả lời: Câu hỏi:bạn hãy cho tôi biết Tố hữu là ai, những tác phẩm của ông gồm những gì?, Câu trả lời: {'summary': 'Tố hữu là ai, những tác phẩm của tố hữu', 'items': ['Tố Hữu','Tác phẩm của Tố Hữu'],}"
         )
         messages = create_message(system_contents, user_contents=question)
         return self.client.default_chat_completion(messages)
 
     def query_greeting(self, question: str) -> str:
         system_contents = (
-            "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
+             "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
             "2. Bạn được xây dựng bởi team AI.\n"
-            "3. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
-            "4. Đứng trên các vai trò trên, bạn hãy trả lời câu chào hỏi dưới đây khi người dùng gặp bạn.\n"
-            "5. Trả lời bằng tiếng Việt."
+            "3. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau bao gồm: Toán, Vật lý, Hóa học,Văn học, Sinh học, Lịch sử, Địa lý, Giáo dục công dân, Công nghệ, Tin học.\n"
+            "4. Đọc câu hỏi của người dùng.\n"
+            "5.Hãy  chào hỏi lại người dùng dưới vai trò của bạn."
+            "6. Không được cung cấp thêm thông tin gì ngoài những thông tin mà tôi cung cấp"
         )
 
         messages = create_message(system_contents, user_contents=question)
         return self.client.default_chat_completion(messages)
 
-    def query_relevant_question(self, question: str, info):
+    def query_relevant_question(self,  info):
         """
             Struct of histories: a array of question and answer of system.
             Example: histories=[
@@ -92,17 +92,15 @@ class QuestionType:
         system_contents = (
             "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
             "2. Bạn được xây dựng bởi team AI.\n"
-            "3. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
+            "3. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau bao gồm: Toán, Vật lý, Hóa học,Văn học, Sinh học, Lịch sử, Địa lý, Giáo dục công dân, Công nghệ, Tin học\n"
             "4. Trả lời bằng tiếng Việt.\n"
-            "5. Đọc câu hỏi của user và thông tin được cung cấp.\n"
-            "6. Từ thông tin được cung cấp, chọn ra 3 thông tin bạn cho là 'Gần nhất' với câu hỏi.\n"
-            "7. Từ 3 thông tin đấy sinh ra ba câu hỏi có liên quan và câu trả lời tương ứng theo nội dung bạn đã chọn.\n"
-            "8. Trả về các câu hỏi, câu trả lời trên theo thứ tự 1,2,3 dưới dạng Câu hỏi:'abc?', 'Câu trả lời':'xyz'.\n"
-            "9. Không được trả về các thông tin không có trong nội dung được tôi cung cấp.\n"
-            "10. Không trả lời lại câu hỏi đã cho."
+            "5. Đọc thông tin được cung cấp sau đó sinh ra duy nhất một câu hỏi và câu trả lời dựa trên thông tin đó. Các câu trả lời phải dựa trên thông tin mà tôi cung cấp.\n"
+            "6. Trả về các câu hỏi, câu trả lời trên theo dưới dạng 'Câu hỏi':'abc?', 'Câu trả lời':'xyz'.\n"
+            "7. Không được trả về các thông tin không có trong nội dung được tôi cung cấp.\n"
+       
 
         )
-        user_contents = f' Câu hỏi: {question}, Thông tin liên quan:{info}'
+        user_contents = f' Thông tin:{info}'
         messages = create_message(system_contents, user_contents)
 
         for chunk in self.client.stream_chat_completion(messages):
@@ -113,7 +111,7 @@ class QuestionType:
 
         system_contents = (
             "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
-            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
+            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau bao gồm: Toán, Vật lý, Hóa học,Văn học, Sinh học, Lịch sử, Địa lý, Giáo dục công dân, Công nghệ, Tin học\n"
             "3. Đọc nội dung được tôi cung cấp và mô tả ngắn gọn lại nội dung đó.\n"
             "4. Bạn không được cung cấp thông tin gì thêm ngoài ngữ cảnh mà tôi cung cấp."
         )
@@ -124,7 +122,7 @@ class QuestionType:
     def hyDE_improve(self, question: str):
         system_contents = (
             "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
-            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
+            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau bao gồm:Toán, Vật lý, Hóa học,Văn học, Sinh học, Lịch sử, Địa lý, Giáo dục công dân, Công nghệ, Tin học\n"
             "3. Đọc câu hỏi được đưa ra.\n"
             "4. Viết một đoạn văn trả lời cho câu hỏi đó.\n"
             "5. Trả về đoạn văn chứa câu trả lời, ngoài ra không được đưa ra thêm bất kỳ thông tin gì.\n"
@@ -147,12 +145,12 @@ class QuestionType:
             """
         systemt_contents = (
             "1. Bạn đang đóng vai trò là một chatbot hỗ trợ giáo dục.\n"
-            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau.\n"
+            "2. Bạn được xây dựng để trả lời các câu hỏi liên quan đến kiến thức học tập trong các môn học khác nhau bao gồm: Toán, Vật lý, Hóa học,Văn học, Sinh học, Lịch sử, Địa lý, Giáo dục công dân, Công nghệ, Tin học\n"
             "3. Trả lời bằng tiếng Việt.\n"
             "4. Đọc câu hỏi của user và câu trả lời của assistant được cung cấp.\n"
             "5. Đọc câu hỏi được đưa ra. Trả lời câu hỏi của user, dựa trên câu hỏi của user, câu trả lời của assistant trước đó và thông tin được cung cấp ngay phía sau câu hỏi.\n"
             "6. Nếu tìm thấy dữ liệu có liên quan đến câu hỏi, dù ít hay nhiều thì đưa ra câu trả lời tương ứng.\n"
-            "7. Nếu không tìm thấy dữ liệu cho câu hỏi thì trả về 'Không tìm thấy dữ liệu về câu hỏi.'.\n"
+            "7. Nếu không tìm thấy dữ liệu cho câu hỏi thì trả về 'Xin lỗi bạn, có thể dữ liệu được cung cấp không có thông tin về kiến thức này.'.\n"
             "8. Không được trả về thông tin không có trong nội dung mà tôi không cung cấp."
 
         )
@@ -163,34 +161,22 @@ class QuestionType:
             yield chunk
 
     def get_document_query(self, question):
-        try:
-            print("Getting document query")
-            document_query = []
-            
-            print("Getting hypothetical document")
-            hypothetical_document = self.hyDE_improve(question)
-            document_query.append(hypothetical_document)
+        document_query = []
+        hypothetical_document = self.hyDE_improve(question)
+        document_query.append(hypothetical_document)
 
-            print("Improving question")
-            question_context = self.improve_question(question=question)
-            print(f"Question context before parsing: {question_context}")
-            question_context = question_context.replace("'", '"')
-            question_context = json.loads(question_context)
-            print(f"Parsed question context: {question_context}")
-            
-            document_query.append(question_context['summary'])
-            document_query.append(question_context['topic'])
-            
-            print(f"Final document query: {document_query}")
-            return document_query
-        except Exception as e:
-            print(f"Error in get_document_query: {str(e)}")
-            raise e
-
+        question_context = self.improve_question(question=question)
+        print(question_context)
+        question_context = question_context.replace("'", '"')
+        question_context = json.loads(question_context)
+        document_query.append(question_context['summary'])
+        document_query.extend(question_context['items'])
+        print(document_query)
+        return document_query
     def gen_question(self,content):
         systemt_contents=  f"""
             Bạn là một trợ lý AI chuyên tạo câu hỏi trắc nghiệm từ văn bản. 
-            Nhiệm vụ của bạn là đọc đoạn văn sau và tạo ra **nhiều câu hỏi trắc nghiệm** với **4 lựa chọn trả lời**, trong đó chỉ có **một đáp án đúng** cho mỗi câu hỏi.  
+            Nhiệm vụ của bạn là đọc đoạn văn sau và tạo ra *nhiều câu hỏi trắc nghiệm* với *4 lựa chọn trả lời*, trong đó chỉ có *một đáp án đúng* cho mỗi câu hỏi.  
             Hãy tự quyết định số lượng câu hỏi phù hợp dựa trên độ dài và nội dung của đoạn văn.  
 
             ## Văn bản đầu vào:

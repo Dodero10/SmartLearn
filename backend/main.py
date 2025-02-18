@@ -1,7 +1,9 @@
 import asyncio
 import io
+import logging
 import os
 from datetime import datetime
+from utils.database_manage import DatabaseManagerfrom datetime import datetime
 
 from celery import chain
 from celery.result import AsyncResult
@@ -9,32 +11,11 @@ from chat_query.query import gen_quiz, query
 from config.celery_app import celery_app
 from config.minio_client import bucket_name, minio_client
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from generaldb.models import User
-from passlib.hash import bcrypt
-from pydantic import BaseModel, EmailStr, Field
-from tasks import (create_chat_task, create_project_task, delete_chat_task,
-                   delete_file_in_chat_task, delete_pdf_and_images,
-                   download_pdf_from_minio, generate_lecture,
-                   get_chat_message_task, get_history_task, get_setting_task,
-                   push_setting_task, save_pdf_to_minio, search_chat_task,
-                   send_message_task, update_name_chat_task,
-                   update_name_project_task, upload_file_db_task, upload_slide)
+from tasks import (delete_pdf_and_images, download_pdf_from_minio,
+                   generate_lecture, save_pdf_to_minio, upload_slide)
 
-app = FastAPI(
-    title="Chat API",
-    description="API for chat application",
-    version="1.0.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI()
 
 
 @app.post("/upload_pdf/")
@@ -134,38 +115,48 @@ async def delete_pdf(filename: str):
             raise HTTPException(status_code=500, detail="Lỗi không xác định")
 
 
+@app.options("/ai_tutor_query")
+async def ai_tutor_query_options():
+    return {"message": "OK"}
+
 @app.post("/ai_tutor_query")
-async def ai_tutor_query(question: str):
+async def ai_tutor_query(query_data: TutorQuery):
     try:
-        async def stream_response():
+        def stream_answer():
             try:
-                # Convert sync generator to async
-                for chunk in query(question=question):
-                    yield chunk
-                    # Add a small delay to prevent blocking
-                    await asyncio.sleep(0.01)
+                for chunk in query(question=query_data.question):
+                    yield f"data: {chunk}\n\n"
             except Exception as e:
-                error_msg = f"Error during query processing: {str(e)}"
-                print(error_msg)  # Log the error
-                yield f"Lỗi server: {error_msg}"
+                yield f"data: Lỗi server, vui lòng thử lại sau!\n\n"
 
         return StreamingResponse(
-            stream_response(),
-            media_type="text/plain"
+            stream_answer(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Credentials": "true",
+            }
         )
-    except Exception as e:
-        error_msg = f"Error in endpoint: {str(e)}"
-        print(error_msg)  # Log the error
-        raise HTTPException(status_code=500, detail=error_msg)
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/gen_quizz")
-def gen_quizz(filenames: list[str]):
+def gen_quizz(filenames:list[str]):
     try:
-        quizzes = gen_quiz(filenames=filenames)
+        quizzes=gen_quiz(filenames=filenames)
         return quizzes
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+@app.get("/test")
+def test():
+    data=DatabaseManager()
+    return data.collection.get()
 
 
 ####### Dat

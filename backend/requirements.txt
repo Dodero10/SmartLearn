@@ -21,6 +21,7 @@ pdf2image
 numpy
 pydub
 ffmpeg-python
+poppler-utils
 
 # MongoDB packages with compatible versions
 pymongo==4.6.1

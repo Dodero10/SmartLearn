@@ -6,7 +6,8 @@ RUN apt-get update && \
     poppler-utils \
     ffmpeg \
     gcc \
-    python3-dev && \
+    python3-dev \
+    libpq-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

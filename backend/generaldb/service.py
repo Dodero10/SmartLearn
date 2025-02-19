@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from .models import User, Project, Chat, Message, File, Setting
+from .models import User, Chat, Message, File, Setting
 from bson import ObjectId
 
 class DatabaseService:
@@ -8,21 +8,12 @@ class DatabaseService:
     def get_history(user_id: str) -> List[Dict[str, Any]]:
         """Lấy lịch sử chat của user"""
         try:
-            projects = Project.objects(user_id=user_id, active=True)
-            history = []
-            for project in projects:
-                chats = Chat.objects(project_id=project.id, active=True)
-                project_data = {
-                    "project_id": str(project.id),
-                    "project_name": project.project_name,
-                    "chats": [{
-                        "chat_id": str(chat.id),
-                        "title": chat.title,
-                        "timestamp": chat.timestamp
-                    } for chat in chats]
-                }
-                history.append(project_data)
-            return history
+            chats = Chat.objects(user_id=user_id, active=True)
+            return [{
+                "chat_id": str(chat.id),
+                "title": chat.title,
+                "timestamp": chat.timestamp
+            } for chat in chats]
         except Exception as e:
             raise Exception(f"Lỗi khi lấy lịch sử chat: {str(e)}")
 
@@ -36,23 +27,11 @@ class DatabaseService:
             raise Exception(f"Lỗi khi lấy setting: {str(e)}")
 
     @staticmethod
-    def create_project(user_id: str, project_name: str) -> str:
-        """Tạo project mới"""
-        try:
-            project = Project(
-                user_id=user_id,
-                project_name=project_name
-            ).save()
-            return str(project.id)
-        except Exception as e:
-            raise Exception(f"Lỗi khi tạo project: {str(e)}")
-
-    @staticmethod
-    def create_chat(project_id: str, title: str) -> str:
-        """Tạo chat mới trong project"""
+    def create_chat(user_id: str, title: str) -> str:
+        """Tạo chat mới cho user"""
         try:
             chat = Chat(
-                project_id=project_id,
+                user_id=user_id,
                 title=title
             ).save()
             return str(chat.id)
@@ -60,14 +39,13 @@ class DatabaseService:
             raise Exception(f"Lỗi khi tạo chat: {str(e)}")
 
     @staticmethod
-    def upload_file(chat_id: str, file_name: str, file_type: str, size: int) -> str:
-        """Upload file vào chat"""
+    def upload_file(user_id: str, file_name: str, file_type: str) -> str:
+        """Upload file cho user"""
         try:
             file = File(
-                chat_id=chat_id,
+                user_id=user_id,
                 file_name=file_name,
-                file_type=file_type,
-                size=size
+                file_type=file_type
             ).save()
             return str(file.id)
         except Exception as e:
@@ -120,20 +98,38 @@ class DatabaseService:
             raise Exception(f"Lỗi khi lấy tin nhắn: {str(e)}")
 
     @staticmethod
-    def delete_file_in_chat(file_id: str) -> None:
-        """Xóa file khỏi chat"""
+    def get_user_files(user_id: str) -> List[Dict[str, Any]]:
+        """Lấy danh sách file của user"""
+        try:
+            files = File.objects(user_id=user_id)
+            return [{
+                "file_id": str(file.id),
+                "file_name": file.file_name,
+                "file_type": file.file_type,
+                "upload_date": file.upload_date,
+                "selected": file.selected
+            } for file in files]
+        except Exception as e:
+            raise Exception(f"Lỗi khi lấy danh sách file: {str(e)}")
+
+    @staticmethod
+    def delete_file(file_id: str) -> None:
+        """Xóa file của user"""
         try:
             File.objects(id=file_id).delete()
         except Exception as e:
             raise Exception(f"Lỗi khi xóa file: {str(e)}")
 
     @staticmethod
-    def update_name_project(project_id: str, new_name: str) -> None:
-        """Cập nhật tên project"""
+    def toggle_file_selection(file_id: str) -> None:
+        """Toggle trạng thái selected của file"""
         try:
-            Project.objects(id=project_id).update_one(set__project_name=new_name)
+            file = File.objects(id=file_id).first()
+            if file:
+                file.selected = not file.selected
+                file.save()
         except Exception as e:
-            raise Exception(f"Lỗi khi đổi tên project: {str(e)}")
+            raise Exception(f"Lỗi khi thay đổi trạng thái file: {str(e)}")
 
     @staticmethod
     def update_name_chat(chat_id: str, new_title: str) -> None:
@@ -147,21 +143,14 @@ class DatabaseService:
     def search_chat(user_id: str, keyword: str) -> List[Dict[str, Any]]:
         """Tìm kiếm chat theo từ khóa"""
         try:
-            # Tìm tất cả project của user
-            projects = Project.objects(user_id=user_id, active=True)
-            project_ids = [p.id for p in projects]
-            
-            # Tìm chat trong các project có title chứa keyword
             chats = Chat.objects(
-                project_id__in=project_ids,
+                user_id=user_id,
                 title__icontains=keyword,
                 active=True
             )
             
             return [{
                 "chat_id": str(chat.id),
-                "project_id": str(chat.project_id.id),
-                "project_name": chat.project_id.project_name,
                 "title": chat.title,
                 "timestamp": chat.timestamp
             } for chat in chats]

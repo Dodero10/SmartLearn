@@ -186,26 +186,18 @@ def get_setting_task(user_id: str, key: str):
     except Exception as e:
         return {"error": str(e)}
 
-@celery_app.task(name='tasks.create_project')
-def create_project_task(user_id: str, project_name: str):
-    try:
-        result = DatabaseService.create_project(user_id, project_name)
-        return result
-    except Exception as e:
-        return {"error": str(e)}
-
 @celery_app.task(name='tasks.create_chat')
-def create_chat_task(project_id: str, title: str):
+def create_chat_task(user_id: str, title: str):
     try:
-        result = DatabaseService.create_chat(project_id, title)
+        result = DatabaseService.create_chat(user_id, title)
         return result
     except Exception as e:
         return {"error": str(e)}
 
 @celery_app.task(name='tasks.upload_file_db')
-def upload_file_db_task(chat_id: str, file_name: str, file_type: str, size: int):
+def upload_file_db_task(user_id: str, file_name: str, file_type: str):
     try:
-        result = DatabaseService.upload_file(chat_id, file_name, file_type, size)
+        result = DatabaseService.upload_file(user_id, file_name, file_type)
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -250,14 +242,6 @@ def delete_file_in_chat_task(chat_id: str):
     except Exception as e:
         return {"error": str(e)}
 
-@celery_app.task(name='tasks.update_name_project')
-def update_name_project_task(project_id: str, new_name: str):
-    try:
-        DatabaseService.update_name_project(project_id, new_name)
-        return True
-    except Exception as e:
-        return {"error": str(e)}
-
 @celery_app.task(name='tasks.update_name_chat')
 def update_name_chat_task(chat_id: str, new_name: str):
     try:
@@ -271,5 +255,29 @@ def search_chat_task(user_id: str, keyword: str):
     try:
         result = DatabaseService.search_chat(user_id, keyword)
         return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@celery_app.task(name='tasks.get_user_files')
+def get_user_files_task(user_id: str):
+    try:
+        result = DatabaseService.get_user_files(user_id)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+@celery_app.task(name='tasks.delete_file')
+def delete_file_task(file_id: str):
+    try:
+        DatabaseService.delete_file(file_id)
+        return True
+    except Exception as e:
+        return {"error": str(e)}
+
+@celery_app.task(name='tasks.toggle_file_selection')
+def toggle_file_selection_task(file_id: str):
+    try:
+        DatabaseService.toggle_file_selection(file_id)
+        return True
     except Exception as e:
         return {"error": str(e)}

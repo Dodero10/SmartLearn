@@ -50,14 +50,8 @@ class User(Document):
         ]
     }
 
-class Project(Document):
-    user_id = ReferenceField(User, required=True)
-    project_name = StringField(required=True)
-    timestamp = DateTimeField(default=datetime.utcnow)
-    active = BooleanField(default=True)
-
 class Chat(Document):
-    project_id = ReferenceField(Project, required=True)
+    user_id = ReferenceField(User, required=True)
     title = StringField(required=True)
     timestamp = DateTimeField(default=datetime.utcnow)
     active = BooleanField(default=True)
@@ -69,11 +63,18 @@ class Message(Document):
     timestamp = DateTimeField(default=datetime.utcnow)
 
 class File(Document):
-    chat_id = ReferenceField(Chat, required=True)
+    user_id = ReferenceField(User, required=True)
     file_name = StringField(required=True)
     file_type = StringField(required=True)
-    size = IntField(required=True)
     upload_date = DateTimeField(default=datetime.utcnow)
+    selected = BooleanField(default=True)
+
+    meta = {
+        'indexes': [
+            'user_id',
+            'file_name'
+        ]
+    }
 
 class Quiz(Document):
     chat_id = ReferenceField(Chat, required=True)

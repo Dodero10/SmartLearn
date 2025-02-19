@@ -15,13 +15,13 @@ from fastapi.responses import StreamingResponse
 from generaldb.models import User
 from passlib.hash import bcrypt
 from pydantic import BaseModel, EmailStr, Field
-from tasks import (create_chat_task, create_project_task, delete_chat_task,
+from tasks import (create_chat_task, delete_chat_task,
                    delete_file_in_chat_task, delete_pdf_and_images,
                    download_pdf_from_minio, generate_lecture,
                    get_chat_message_task, get_history_task, get_setting_task,
                    push_setting_task, save_pdf_to_minio, search_chat_task,
-                   send_message_task, update_name_chat_task,
-                   update_name_project_task, upload_file_db_task, upload_slide)
+                   send_message_task, update_name_chat_task, upload_file_db_task, upload_slide,
+                   get_user_files_task, delete_file_task, toggle_file_selection_task)
 
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO)
@@ -225,12 +225,8 @@ async def handle_generate_lecture(file: UploadFile = File(...)):
 ####### Dat
 ####### Phuc
 
-class ProjectCreate(BaseModel):
-    user_id: str = Field(..., description="ID của user")
-    project_name: str = Field(..., description="Tên project")
-
 class ChatCreate(BaseModel):
-    project_id: str = Field(..., description="ID của project") 
+    user_id: str = Field(..., description="ID của user") 
     title: str = Field(..., description="Tiêu đề chat")
 
 class MessageCreate(BaseModel):
@@ -259,19 +255,9 @@ async def get_user_setting(user_id: str, key: str):
     result = await handle_task_result(task)
     return result
 
-@app.post("/project",
-    tags=["Project"], 
-    summary="Tạo project mới",
-    response_description="Project đã được tạo"
-)
-async def create_new_project(project: ProjectCreate):
-    task = create_project_task.delay(project.user_id, project.project_name)
-    result = await handle_task_result(task)
-    return result
-
 @app.post("/chat")
 async def create_new_chat(chat: ChatCreate):
-    task = create_chat_task.delay(chat.project_id, chat.title)
+    task = create_chat_task.delay(chat.user_id, chat.title)
     result = await handle_task_result(task)
     return result
 
@@ -302,18 +288,6 @@ async def get_messages(chat_id: str):
 @app.delete("/chat/{chat_id}/files")
 async def delete_chat_files(chat_id: str):
     task = delete_file_in_chat_task.delay(chat_id)
-    result = await handle_task_result(task)
-    return result
-
-@app.put("/project/{project_id}/name/{new_name}")
-async def rename_project(project_id: str, new_name: str):
-    task = update_name_project_task.delay(project_id, new_name)
-    result = await handle_task_result(task)
-    return result
-
-@app.put("/chat/{chat_id}/name/{new_name}")
-async def rename_chat(chat_id: str, new_name: str):
-    task = update_name_chat_task.delay(chat_id, new_name)
     result = await handle_task_result(task)
     return result
 
@@ -401,3 +375,31 @@ async def get_user(user_id: int):
         raise HTTPException(status_code=404, detail="User not found")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/files/upload")
+async def upload_file_to_db(
+    user_id: str,
+    file_name: str,
+    file_type: str
+):
+    task = upload_file_db_task.delay(user_id, file_name, file_type)
+    result = await handle_task_result(task)
+    return result
+
+@app.get("/files/{user_id}")
+async def get_user_files(user_id: str):
+    task = get_user_files_task.delay(user_id)
+    result = await handle_task_result(task)
+    return result
+
+@app.delete("/files/{file_id}")
+async def delete_file(file_id: str):
+    task = delete_file_task.delay(file_id)
+    result = await handle_task_result(task)
+    return result
+
+@app.put("/files/{file_id}/toggle")
+async def toggle_file_selection(file_id: str):
+    task = toggle_file_selection_task.delay(file_id)
+    result = await handle_task_result(task)
+    return result

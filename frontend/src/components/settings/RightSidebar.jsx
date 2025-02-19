@@ -17,6 +17,10 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useNavigate } from 'react-router-dom';
+import { chatService } from '../../services/chatService';
+import { CircularProgress } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 
 const MIN_SIDEBAR_WIDTH = 300;
 const MAX_SIDEBAR_WIDTH = 600;
@@ -141,28 +145,20 @@ const SettingsContainer = styled.div`
 `;
 
 const Section = styled.div`
-  margin-bottom: 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
+  margin-bottom: 24px;
 `;
 
 const SectionHeader = styled.div`
-  padding: 12px 16px;
-  background: #f8f9fa;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  user-select: none;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
 
   &:hover {
-    background: #f0f2ff;
-  }
-
-  svg {
-    transform: ${props => props.isOpen ? 'rotate(-90deg)' : 'rotate(90deg)'};
-    transition: transform 0.3s ease;
+    background: #f5f5f5;
   }
 `;
 
@@ -170,37 +166,31 @@ const SectionTitle = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #1a237e;
   font-weight: 500;
+  color: #333;
 `;
 
 const SectionContent = styled.div`
-  padding: ${props => props.isOpen ? '16px' : '0'};
-  max-height: ${props => props.isOpen ? '500px' : '0'};
-  transition: all 0.3s ease;
-  overflow: hidden;
+  padding: 16px 8px;
+  display: ${props => props.isOpen ? 'block' : 'none'};
 `;
 
 const InputGroup = styled.div`
   margin-bottom: 16px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 `;
 
 const Label = styled.label`
   display: block;
   margin-bottom: 8px;
-  color: #666;
   font-size: 14px;
+  color: #666;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 14px;
 
   &:focus {
@@ -213,7 +203,7 @@ const Select = styled.select`
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 14px;
   background: white;
 
@@ -228,67 +218,27 @@ const Slider = styled.input.attrs({ type: 'range' })`
   margin: 8px 0;
 `;
 
-const ToggleButton = styled.button`
-  position: absolute;
-  left: -24px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: white;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 24px;
-  height: 48px;
-  border-radius: 8px 0 0 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-
-  &:hover {
-    background: #f0f2ff;
-  }
-
-  svg {
-    transform: ${props => props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
-    transition: transform 0.3s ease;
-  }
+const FileListSection = styled(Section)`
+  margin-top: 16px;
 `;
 
 const FileList = styled.div`
-  margin-top: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 `;
 
 const FileItem = styled.div`
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  background: ${props => props.selected ? '#f0f2ff' : 'white'};
-  border-bottom: 1px solid #e0e0e0;
-  transition: all 0.2s ease;
-  cursor: pointer;
-
-  &:last-child {
-    border-bottom: none;
-  }
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
 
   &:hover {
-    background: ${props => props.selected ? '#e3e7ff' : '#f8f9fa'};
-  }
-`;
-
-const FileCheckbox = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1a237e;
-  opacity: ${props => props.selected ? 1 : 0.6};
-  
-  &:hover {
-    opacity: 1;
+    background: #f8f9fa;
   }
 `;
 
@@ -298,38 +248,20 @@ const FileInfo = styled.div`
   gap: 8px;
   flex: 1;
   min-width: 0;
-  margin-left: 4px;
 `;
 
-const FileDetails = styled.div`
+const FileIcon = styled.div`
+  color: #1a237e;
   display: flex;
-  flex-direction: column;
-  min-width: 0;
+  align-items: center;
 `;
 
-const FileName = styled.span`
+const FileName = styled.div`
   font-size: 14px;
   color: #333;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`;
-
-const FileMetadata = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-`;
-
-const FileSize = styled.span`
-  font-size: 12px;
-  color: #666;
-`;
-
-const FileDate = styled.span`
-  font-size: 12px;
-  color: #666;
 `;
 
 const DeleteButton = styled.button`
@@ -338,16 +270,10 @@ const DeleteButton = styled.button`
   padding: 4px;
   color: #666;
   cursor: pointer;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  opacity: 0;
-  transition: all 0.2s ease;
-
-  ${FileItem}:hover & {
-    opacity: 1;
-  }
 
   &:hover {
     background: #fee2e2;
@@ -385,6 +311,117 @@ const FileInput = styled.input`
   display: none;
 `;
 
+const FileCheckbox = styled.div`
+  display: flex;
+  align-items: center;
+  color: ${props => props.selected ? '#1a237e' : '#666'};
+  margin-right: 8px;
+  cursor: pointer;
+`;
+
+const FileDetails = styled.div`
+  flex: 1;
+  min-width: 0;
+  margin-left: 8px;
+`;
+
+const FileMetadata = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+`;
+
+const FileSize = styled.span`
+  color: #666;
+`;
+
+const FileDate = styled.span`
+  color: #666;
+`;
+
+const StatusMessage = styled.div`
+  padding: 8px 16px;
+  margin: 8px 0;
+  border-radius: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  ${props => props.type === 'processing' && `
+    background-color: #e3f2fd;
+    color: #1976d2;
+  `}
+  
+  ${props => props.type === 'success' && `
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  `}
+  
+  ${props => props.type === 'error' && `
+    background-color: #ffebee;
+    color: #c62828;
+  `}
+`;
+
+const ProcessingText = styled.div`
+  display: flex;
+  align-items: center;
+  color: #1976d2;
+  font-size: 12px;
+  
+  .MuiCircularProgress-root {
+    color: inherit;
+  }
+`;
+
+const FileStatus = styled.div`
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  &.processing {
+    color: #1976d2;
+  }
+  
+  &.success {
+    color: #2e7d32;
+  }
+  
+  &.error {
+    color: #c62828;
+  }
+`;
+
+const UploadIconButton = styled.button`
+  background: none;
+  border: none;
+  padding: 4px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+
+  &:hover {
+    background: #f0f0f0;
+    color: #1a237e;
+  }
+
+  svg {
+    font-size: 20px;
+  }
+`;
+
+const HiddenFileInput = styled.input`
+  display: none;
+`;
+
 const RightSidebar = ({ isOpen, onToggle, activeFunction, settings, onSettingsChange, uploadedFiles, onRemoveFile, onToggleFileSelection, onUploadFiles }) => {
   const [expandedSections, setExpandedSections] = useState(['apiKeys']);
   const [sidebarWidth, setSidebarWidth] = useState(MIN_SIDEBAR_WIDTH);
@@ -392,6 +429,16 @@ const RightSidebar = ({ isOpen, onToggle, activeFunction, settings, onSettingsCh
   const resizeRef = useRef(null);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const [pdfFiles, setPdfFiles] = useState([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState({
+    isUploading: false,
+    message: '',
+    files: {}
+  });
+  const [processingFiles, setProcessingFiles] = useState(new Set());
+  const [fileStatuses, setFileStatuses] = useState({});
+  const uploadFileRef = useRef(null);
 
   const startResizing = (e) => {
     setIsResizing(true);
@@ -421,9 +468,12 @@ const RightSidebar = ({ isOpen, onToggle, activeFunction, settings, onSettingsCh
       document.removeEventListener('mousemove', resize);
       document.removeEventListener('mouseup', stopResizing);
     };
-  }, [isResizing, resize]);
+  }, [isResizing]);
 
-  const toggleSection = (section) => {
+  const toggleSection = async (section) => {
+    if (section === 'files' && !expandedSections.includes('files')) {
+      fetchPdfFiles();
+    }
     setExpandedSections(prev => 
       prev.includes(section) 
         ? prev.filter(s => s !== section)
@@ -442,16 +492,10 @@ const RightSidebar = ({ isOpen, onToggle, activeFunction, settings, onSettingsCh
   };
 
   const getFileIcon = (fileType) => {
-    if (fileType.includes('pdf')) {
-      return <PictureAsPdfIcon style={{ fontSize: '20px', color: '#e53935' }} />;
-    } else if (fileType.includes('image')) {
-      return <ImageIcon style={{ fontSize: '20px', color: '#43a047' }} />;
-    } else if (fileType.includes('text') || fileType.includes('document')) {
-      return <DescriptionIcon style={{ fontSize: '20px', color: '#1565c0' }} />;
-    } else if (fileType.includes('javascript') || fileType.includes('python')) {
-      return <CodeIcon style={{ fontSize: '20px', color: '#f4b400' }} />;
-    }
-    return <InsertDriveFileIcon style={{ fontSize: '20px', color: '#757575' }} />;
+    if (fileType.includes('pdf')) return <PictureAsPdfIcon />;
+    if (fileType.includes('doc')) return <DescriptionIcon />;
+    if (fileType.includes('image')) return <ImageIcon />;
+    return <InsertDriveFileIcon />;
   };
 
   const formatDate = (timestamp) => {
@@ -468,37 +512,75 @@ const RightSidebar = ({ isOpen, onToggle, activeFunction, settings, onSettingsCh
     navigate('/profile');
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     if (!onUploadFiles) return;
+    
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    onUploadFiles(files);
+
+    try {
+      setIsLoadingFiles(true);
+      
+      // Upload từng file
+      for (const file of files) {
+        try {
+          await chatService.uploadFile(file);
+        } catch (error) {
+          console.error(`Error uploading file ${file.name}:`, error);
+        }
+      }
+      
+      // Refresh danh sách file từ server
+      await fetchPdfFiles();
+      
+      // Thông báo lên component cha
+      onUploadFiles(files);
+
+    } catch (error) {
+      console.error('Error uploading files:', error);
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  };
+
+  const fetchPdfFiles = async () => {
+    try {
+      const files = await chatService.listUploadedFiles();
+      
+      // Cập nhật danh sách file, giữ lại các file đang xử lý
+      setPdfFiles(prev => {
+        const processingFilesList = prev.filter(file => processingFiles.has(file.file_name));
+        const newFiles = files.filter(file => !processingFiles.has(file.file_name));
+        return [...processingFilesList, ...newFiles];
+      });
+    } catch (error) {
+      console.error('Error fetching PDF files:', error);
+    }
+  };
+
+  const handleUploadClick = () => {
+    uploadFileRef.current?.click();
   };
 
   return (
     <SidebarWrapper>
+      <ResizeHandle onMouseDown={startResizing}>
+        <DragIndicatorIcon className="drag-indicator" />
+      </ResizeHandle>
       <SidebarContainer isOpen={isOpen} width={sidebarWidth} isResizing={isResizing}>
-        <ResizeHandle
-          onMouseDown={startResizing}
-          ref={resizeRef}
-        >
-          <DragIndicatorIcon className="drag-indicator" />
-        </ResizeHandle>
-        <ToggleButton onClick={onToggle} isOpen={isOpen}>
-          <ChevronRightIcon />
-        </ToggleButton>
         <SidebarHeader>
           <HeaderTitle>
-            <SettingsIcon fontSize="small" />
+            <SettingsIcon />
             Settings
           </HeaderTitle>
           <HeaderActions>
             <UserButton onClick={handleUserClick}>
               <AccountCircleIcon className="user-icon" />
-              <span className="user-name">John Doe</span>
+              <span className="user-name">User</span>
             </UserButton>
           </HeaderActions>
         </SidebarHeader>
+
         <SettingsContainer>
           {/* API Keys Section */}
           <Section>
@@ -628,6 +710,119 @@ const RightSidebar = ({ isOpen, onToggle, activeFunction, settings, onSettingsCh
               </SectionContent>
             </Section>
           )}
+
+          {/* Files Section - Moved after AI Tutor Settings */}
+          <FileListSection>
+            <SectionHeader onClick={() => toggleSection('files')}>
+              <SectionTitle>
+                <InsertDriveFileIcon fontSize="small" />
+                Uploaded Files
+              </SectionTitle>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UploadIconButton 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Ngăn không cho section đóng/mở khi click
+                    handleUploadClick();
+                  }}
+                  title="Upload file"
+                >
+                  <UploadFileIcon />
+                </UploadIconButton>
+                <ChevronRightIcon 
+                  style={{ 
+                    transform: isSectionExpanded('files') ? 'rotate(-90deg)' : 'rotate(90deg)',
+                    transition: 'transform 0.3s ease'
+                  }} 
+                />
+              </div>
+            </SectionHeader>
+            <HiddenFileInput
+              type="file"
+              ref={uploadFileRef}
+              onChange={handleFileUpload}
+              accept=".pdf,.doc,.docx,.txt"
+              multiple
+            />
+            <SectionContent isOpen={isSectionExpanded('files')}>
+              {uploadStatus.isUploading && (
+                <StatusMessage type="processing">
+                  <CircularProgress size={16} />
+                  {uploadStatus.message}
+                </StatusMessage>
+              )}
+
+              {Object.entries(uploadStatus.files).map(([fileName, status]) => (
+                <StatusMessage 
+                  key={fileName}
+                  type={status.status}
+                >
+                  {status.status === 'processing' && <CircularProgress size={16} />}
+                  {status.status === 'success' && <CheckCircleIcon fontSize="small" />}
+                  {status.status === 'error' && <ErrorIcon fontSize="small" />}
+                  {fileName}: {status.message}
+                </StatusMessage>
+              ))}
+
+              {isLoadingFiles ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  Loading files...
+                </div>
+              ) : pdfFiles.length === 0 ? (
+                <div style={{ 
+                  color: '#666', 
+                  fontSize: '14px', 
+                  textAlign: 'center', 
+                  padding: '16px',
+                  background: 'white' 
+                }}>
+                  No files uploaded yet
+                </div>
+              ) : (
+                <FileList>
+                  {pdfFiles.map((file, index) => (
+                    <FileItem 
+                      key={index} 
+                      selected={file.selected}
+                      onClick={() => onToggleFileSelection?.(file.file_name)}
+                    >
+                      <FileCheckbox selected={file.selected}>
+                        {file.selected ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
+                      </FileCheckbox>
+                      <FileInfo>
+                        {getFileIcon(file.file_type)}
+                        <FileDetails>
+                          <FileName>{file.file_name}</FileName>
+                          <FileMetadata>
+                            <FileDate>{formatDate(file.upload_date)}</FileDate>
+                            {fileStatuses[file.file_name] && (
+                              <FileStatus className={
+                                fileStatuses[file.file_name] === 'Đang xử lý' ? 'processing' :
+                                fileStatuses[file.file_name] === 'Thành công' ? 'success' : 'error'
+                              }>
+                                {fileStatuses[file.file_name] === 'Đang xử lý' && (
+                                  <CircularProgress size={12} />
+                                )}
+                                {fileStatuses[file.file_name]}
+                              </FileStatus>
+                            )}
+                          </FileMetadata>
+                        </FileDetails>
+                      </FileInfo>
+                      <DeleteButton 
+                        className="delete-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveFile?.(file.file_name);
+                        }}
+                      >
+                        <DeleteIcon style={{ fontSize: '18px' }} />
+                      </DeleteButton>
+                    </FileItem>
+                  ))}
+                </FileList>
+              )}
+            </SectionContent>
+          </FileListSection>
 
           {/* Video Conversion Settings */}
           {activeFunction === 'video' && (

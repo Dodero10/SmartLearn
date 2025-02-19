@@ -79,6 +79,9 @@ const ChatPage = () => {
 
   const chatBoxRef = useRef(null);
 
+  // Thêm state để lưu trữ danh sách files từ server
+  const [serverFiles, setServerFiles] = useState([]);
+
   const handleChatSelect = (chatId) => {
     setActiveChatId(chatId);
   };
@@ -125,18 +128,17 @@ const ChatPage = () => {
     }
   };
 
-  const handleUploadFiles = (files) => {
+  const handleUploadFiles = async (files) => {
     const newFiles = Array.from(files).map(file => ({
       file,
       name: file.name,
-      size: file.size,
       type: file.type,
       selected: true,
       lastModified: file.lastModified
     }));
 
     if (!activeChatId) {
-      // Create a new chat with the uploaded files
+      // Tạo chat mới với files đã upload
       const newChatId = Date.now().toString();
       const newChat = {
         id: newChatId,
@@ -146,7 +148,7 @@ const ChatPage = () => {
         uploadedFiles: newFiles,
         messages: [],
         quizState: activeFunction === 'quiz' ? {
-          status: 'preparing', // preparing, generating, ready
+          status: 'preparing',
           questions: [],
           currentQuestion: 0,
           score: 0,
@@ -156,7 +158,7 @@ const ChatPage = () => {
       setChatHistory(prev => [...prev, newChat]);
       setActiveChatId(newChatId);
 
-      // Nếu là quiz, tự động gửi tin nhắn yêu cầu tạo quiz từ file
+      // Nếu là quiz, tự động gửi tin nhắn yêu cầu tạo quiz
       if (activeFunction === 'quiz') {
         const fileNames = newFiles.map(f => f.name).join(', ');
         const message = {
@@ -176,29 +178,15 @@ const ChatPage = () => {
       return;
     }
     
-    // Add files to existing chat
+    // Thêm files vào chat hiện tại
     setChatHistory(prev => {
       return prev.map(chat => {
         if (chat.id === activeChatId) {
           const existingFiles = Array.isArray(chat.uploadedFiles) ? chat.uploadedFiles : [];
-          const updatedChat = {
+          return {
             ...chat,
             uploadedFiles: [...existingFiles, ...newFiles]
           };
-
-          // Nếu là quiz và đang trong trạng thái preparing, tự động gửi tin nhắn
-          if (chat.type === 'quiz' && chat.quizState?.status === 'preparing') {
-            const fileNames = newFiles.map(f => f.name).join(', ');
-            const message = {
-              id: Date.now().toString(),
-              text: `Please add these files to the quiz generation: ${fileNames}`,
-              isUser: true,
-              timestamp: new Date()
-            };
-            updatedChat.messages = [...updatedChat.messages, message];
-          }
-
-          return updatedChat;
         }
         return chat;
       });
@@ -252,6 +240,11 @@ const ChatPage = () => {
   const currentChat = chatHistory.find(chat => chat.id === activeChatId);
   const currentFiles = Array.isArray(currentChat?.uploadedFiles) ? currentChat.uploadedFiles : [];
 
+  // Thêm hàm để cập nhật danh sách files
+  const handleServerFiles = (files) => {
+    setServerFiles(files);
+  };
+
   return (
     <PageContainer>
       <ChatSidebar
@@ -272,7 +265,7 @@ const ChatPage = () => {
           onFunctionChange={setActiveFunction}
           settings={settings}
           uploadedFiles={currentFiles}
-          onUploadFiles={activeFunction === 'quiz' ? null : handleUploadFiles}
+          onUploadFiles={handleUploadFiles}
           onRemoveFile={handleRemoveFile}
           chatHistory={chatHistory}
           isSidebarOpen={isSidebarOpen}
@@ -286,9 +279,10 @@ const ChatPage = () => {
           onSettingsChange={handleSettingsChange}
           uploadedFiles={currentFiles}
           onRemoveFile={handleRemoveFile}
-          onToggleFileSelection={handleToggleFileSelection}
-          onUploadFiles={activeFunction === 'quiz' ? handleUploadFiles : null}
+          onUploadFiles={handleUploadFiles}
           activeChatId={activeChatId}
+          serverFiles={serverFiles}
+          onServerFilesUpdate={handleServerFiles}
         />
       </MainContent>
     </PageContainer>

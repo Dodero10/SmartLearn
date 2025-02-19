@@ -281,28 +281,6 @@ const FileInput = styled.input`
   display: none;
 `;
 
-const FileUploadButton = styled(IconButton)`
-  position: relative;
-  
-  &::after {
-    content: '${props => props.fileCount > 0 ? props.fileCount : ''}';
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    background: var(--primary-color);
-    color: white;
-    border-radius: 12px;
-    min-width: 20px;
-    height: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    display: ${props => props.fileCount > 0 ? 'flex' : 'none'};
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-  }
-`;
-
 const WelcomeMessage = styled.div`
   text-align: center;
   color: var(--text-secondary);
@@ -476,12 +454,21 @@ const ChatBox = React.forwardRef(({
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    onUploadFiles(files);
-
-    // Optional: You can also send these files to your backend here
-    // const formData = new FormData();
-    // files.forEach(file => formData.append('files', file));
-    // await chatService.uploadFiles(formData);
+    try {
+      setIsLoading(true);
+      
+      // Upload từng file
+      for (const file of files) {
+        await chatService.uploadFile(file);
+      }
+      
+      // Thông báo lên component cha
+      onUploadFiles?.(files);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Helper function to format quiz for display
@@ -822,19 +809,6 @@ const ChatBox = React.forwardRef(({
             </MessagesContainer>
             <InputWrapper>
               <InputContainer>
-                <FileInput
-                  type="file"
-                  multiple
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept=".pdf,.pptx"
-                />
-                <FileUploadButton
-                  onClick={() => fileInputRef.current?.click()}
-                  fileCount={uploadedFiles.length}
-                >
-                  <AttachFileIcon />
-                </FileUploadButton>
                 <TextArea
                   value={inputValue}
                   onChange={handleInputChange}
@@ -947,19 +921,6 @@ const ChatBox = React.forwardRef(({
           </FunctionBar>
           <InputWrapper>
             <InputContainer>
-              <FileInput
-                type="file"
-                multiple
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                accept={getAcceptedFileTypes()}
-              />
-              <FileUploadButton
-                onClick={() => fileInputRef.current?.click()}
-                fileCount={uploadedFiles.length}
-              >
-                <AttachFileIcon />
-              </FileUploadButton>
               <TextArea
                 value={inputValue}
                 onChange={handleInputChange}

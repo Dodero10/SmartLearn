@@ -187,5 +187,87 @@ export const chatService = {
       onError(error);
     }
   },
+
+  listUploadedFiles: async () => {
+    try {
+      const response = await fetch(`${API_URL}/list_pdfs`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      return data.pdf_files.map(fileName => ({
+        file_name: fileName,
+        file_type: 'application/pdf',
+        upload_date: new Date(), // Server không trả về ngày, nên tạm dùng ngày hiện tại
+        selected: true
+      }));
+    } catch (error) {
+      console.error('Error fetching PDF list:', error);
+      throw error;
+    }
+  },
+
+  uploadFile: async (file) => {
+    try {
+      // Upload file lên MinIO qua /upload_pdf endpoint
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadResponse = await fetch(`${API_URL}/upload_pdf/`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to MinIO');
+      }
+
+      // Đợi task MinIO hoàn thành
+      const uploadData = await uploadResponse.json();
+      const taskId = uploadData.task_id;
+      
+      while (true) {
+        const statusResponse = await fetch(`${API_URL}/task_status/${taskId}`);
+        const statusData = await statusResponse.json();
+        
+        if (statusData.status === 'Thành công') {
+          break;
+        } else if (statusData.status === 'Thất bại') {
+          throw new Error('MinIO upload failed');
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Đợi 1 giây trước khi check lại
+      }
+
+      // Lưu thông tin file vào MongoDB
+      const fileUploadResponse = await fetch(`${API_URL}/files/upload`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: "1",
+          file_name: file.name,
+          file_type: file.type,
+        }),
+      });
+
+      if (!fileUploadResponse.ok) {
+        throw new Error('Failed to save file info to database');
+      }
+
+      return await fileUploadResponse.json();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  },
 };
 

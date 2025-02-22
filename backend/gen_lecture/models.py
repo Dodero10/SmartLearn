@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class Table(BaseModel):
     rows: List[List[str]]
     columns: List[str]
+    description: Optional[str] = None
 
 class Image(BaseModel):
     data: bytes

@@ -10,6 +10,7 @@ from constants.constants import (BUCKET_NAME, BUCKET_NAME_AUDIO,
 from fastapi.responses import StreamingResponse
 from file_processing.file_processing import chunking, parsing
 from gen_lecture.audio_generator import AudioGenerator
+from gen_lecture.lecture_generator import LectureGenerator
 from gen_lecture.script_generator import ScriptGenerator
 from gen_lecture.slide_processor import SlideProcessor
 from gen_lecture.video_generator import VideoGenerator
@@ -76,9 +77,9 @@ def delete_pdf_and_images(filename: str):
 
     except Exception as e:
         return str(e)
-    
 
-##### Dat
+
+# Dat
 @celery_app.task(name='tasks.upload_slide')
 def upload_slide(file_data: bytes, filename: str):
     try:
@@ -95,80 +96,22 @@ def upload_slide(file_data: bytes, filename: str):
             "message": f"Error uploading slide: {str(e)}"
         }
 
-##### Dat
+# Dat
+
 
 @celery_app.task(name='tasks.generate_lecture')
 def generate_lecture(file_data: bytes, filename: str):
     try:
-        # 1. Process slides and extract metadata
-        processor = SlideProcessor(file_data, filename)
-        lecture_metadata = processor.process_slides()
-        
-        # 2. Save metadata to MinIO
-        metadata_json = lecture_metadata.json()
-        metadata_filename = f"{filename.replace('.pdf', '')}_metadata.json"
-        save_file_to_minio(
-            file_data=metadata_json.encode(),
-            filename=metadata_filename,
-            bucket_name=BUCKET_NAME_METADATA,
-            content_type="application/json"
-        )
-        
-        # 3. Generate script
-        script_generator = ScriptGenerator(lecture_metadata)
-        script = script_generator.generate_script()
-        
-        # 4. Save script to MinIO
-        script_filename = f"{filename.replace('.pdf', '')}_script.txt"
-        save_file_to_minio(
-            file_data=script.encode(),
-            filename=script_filename,
-            bucket_name=BUCKET_NAME_SCRIPTS,
-            content_type="text/plain"
-        )
-        
-        # 5. Generate audio
-        audio_generator = AudioGenerator(lecture_metadata)
-        audio_data = audio_generator.generate_audio()
-        
-        # 6. Save audio to MinIO
-        audio_filename = f"{filename.replace('.pdf', '')}.mp3"
-        save_file_to_minio(
-            file_data=audio_data,
-            filename=audio_filename,
-            bucket_name=BUCKET_NAME_AUDIO,
-            content_type="audio/mpeg"
-        )
-
-        # 7. Generate video
-        video_generator = VideoGenerator(lecture_metadata, file_data, audio_data)
-        video_data = video_generator.generate_video()
-
-        # 8. Save video to MinIO
-        video_filename = f"{filename.replace('.pdf', '')}.mp4"
-        save_file_to_minio(
-            file_data=video_data,
-            filename=video_filename,
-            bucket_name=BUCKET_NAME_VIDEO,
-            content_type="video/mp4"
-        )
-        
-        return {
-            "status": "success",
-            "message": "Lecture generation completed successfully",
-            "metadata_file": metadata_filename,
-            "script_file": script_filename,
-            "audio_file": audio_filename,
-            "video_file": video_filename
-        }
-        
+        generator = LectureGenerator(file_data, filename)
+        return generator.generate()
     except Exception as e:
         return {
             "status": "error",
             "message": f"Error generating lecture: {str(e)}"
         }
 
-##### Dat
+# Dat
+
 
 @celery_app.task(name='tasks.get_history')
 def get_history_task(user_id: str):
@@ -178,6 +121,7 @@ def get_history_task(user_id: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 @celery_app.task(name='tasks.get_setting')
 def get_setting_task(user_id: str, key: str):
     try:
@@ -185,6 +129,7 @@ def get_setting_task(user_id: str, key: str):
         return result
     except Exception as e:
         return {"error": str(e)}
+
 
 @celery_app.task(name='tasks.create_project')
 def create_project_task(user_id: str, project_name: str):
@@ -194,6 +139,7 @@ def create_project_task(user_id: str, project_name: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 @celery_app.task(name='tasks.create_chat')
 def create_chat_task(project_id: str, title: str):
     try:
@@ -202,13 +148,16 @@ def create_chat_task(project_id: str, title: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 @celery_app.task(name='tasks.upload_file_db')
 def upload_file_db_task(chat_id: str, file_name: str, file_type: str, size: int):
     try:
-        result = DatabaseService.upload_file(chat_id, file_name, file_type, size)
+        result = DatabaseService.upload_file(
+            chat_id, file_name, file_type, size)
         return result
     except Exception as e:
         return {"error": str(e)}
+
 
 @celery_app.task(name='tasks.send_message')
 def send_message_task(chat_id: str, role: str, content: str):
@@ -218,6 +167,7 @@ def send_message_task(chat_id: str, role: str, content: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 @celery_app.task(name='tasks.push_setting')
 def push_setting_task(user_id: str, key: str, value: str):
     try:
@@ -225,6 +175,7 @@ def push_setting_task(user_id: str, key: str, value: str):
         return result
     except Exception as e:
         return {"error": str(e)}
+
 
 @celery_app.task(name='tasks.delete_chat')
 def delete_chat_task(chat_id: str):
@@ -234,6 +185,7 @@ def delete_chat_task(chat_id: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 @celery_app.task(name='tasks.get_chat_message')
 def get_chat_message_task(chat_id: str):
     try:
@@ -241,6 +193,7 @@ def get_chat_message_task(chat_id: str):
         return result
     except Exception as e:
         return {"error": str(e)}
+
 
 @celery_app.task(name='tasks.delete_file_in_chat')
 def delete_file_in_chat_task(chat_id: str):
@@ -250,6 +203,7 @@ def delete_file_in_chat_task(chat_id: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 @celery_app.task(name='tasks.update_name_project')
 def update_name_project_task(project_id: str, new_name: str):
     try:
@@ -258,6 +212,7 @@ def update_name_project_task(project_id: str, new_name: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 @celery_app.task(name='tasks.update_name_chat')
 def update_name_chat_task(chat_id: str, new_name: str):
     try:
@@ -265,6 +220,7 @@ def update_name_chat_task(chat_id: str, new_name: str):
         return True
     except Exception as e:
         return {"error": str(e)}
+
 
 @celery_app.task(name='tasks.search_chat')
 def search_chat_task(user_id: str, keyword: str):

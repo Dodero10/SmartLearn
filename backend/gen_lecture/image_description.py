@@ -1,9 +1,11 @@
+import base64
 import os
 from typing import Optional
 
+import google.generativeai as genai
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -14,7 +16,8 @@ class ImageDescriptionGenerator:
     def __init__(self):
         if not GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY environment variable is not set")
-        self.client = genai.Client(api_key=GEMINI_API_KEY)
+        genai.configure(api_key=GEMINI_API_KEY)
+        self.model = genai.GenerativeModel('gemini-pro-vision')
 
     def generate_description(self, image_data: bytes, mime_type: str = "image/jpeg") -> Optional[str]:
         """
@@ -28,14 +31,22 @@ class ImageDescriptionGenerator:
             str: Generated description or None if generation fails
         """
         try:
-            response = self.client.models.generate_content(
-                model="gemini-2.0-flash-exp",
-                contents=[
-                    "Describe this image in detail. Focus on the main elements, their arrangement, and any text or important visual information.",
-                    types.Part.from_bytes(data=image_data, mime_type=mime_type)
-                ]
-            )
+            # Convert image to base64
+            image_parts = [
+                {
+                    "mime_type": mime_type,
+                    "data": base64.b64encode(image_data).decode('utf-8')
+                }
+            ]
+
+            prompt_parts = [
+                "Describe this image in detail. Focus on the main elements, their arrangement, and any text or important visual information.",
+                image_parts[0]
+            ]
+
+            response = self.model.generate_content(prompt_parts)
             return response.text
+
         except Exception as e:
             print(f"Error generating image description: {str(e)}")
             return None

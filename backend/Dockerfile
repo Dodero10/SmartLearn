@@ -1,14 +1,8 @@
 FROM python:3.10-slim
 
-# Install system dependencies and clean up in a single layer
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    poppler-utils \
-    ffmpeg \
-    gcc \
-    python3-dev \
-    libpq-dev && \
-    apt-get clean && \
+# Cài đặt các gói cần thiết
+RUN apt update && apt-get install -y ffmpeg &&\
+    apt clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -1,6 +1,7 @@
 import io
 from typing import List
 
+import fitz  # PyMuPDF
 import pdfplumber
 from PIL import Image as PILImage
 
@@ -43,43 +44,59 @@ class SlideProcessor:
 
         return tables
 
-    def extract_images(self, page) -> List[Image]:
-        """Extract images from PDF page"""
+    def extract_images(self, page_num: int) -> List[Image]:
+        """Extract images from PDF page using PyMuPDF"""
         images = []
 
-        # Extract images from the page
-        for image in page.images:
-            try:
-                # Get image data
-                image_bytes = image['stream'].get_data()
+        # Open PDF with PyMuPDF
+        pdf_document = fitz.open(stream=self.pdf_data, filetype="pdf")
+        try:
+            page = pdf_document[page_num]
+            image_list = page.get_images()
 
-                # Convert image stream to proper format using PIL
-                img = PILImage.open(io.BytesIO(image_bytes))
+            # Iterate through images on the page
+            for img_index, img_info in enumerate(image_list):
+                try:
+                    # Get image data
+                    xref = img_info[0]  # image reference number
+                    base_image = pdf_document.extract_image(xref)
+                    image_bytes = base_image["image"]
 
-                # Convert to RGB if necessary (handles CMYK images)
-                if img.mode in ['CMYK', 'P']:
-                    img = img.convert('RGB')
+                    # Get image format
+                    # Format like 'JPEG', 'PNG'
+                    image_format = base_image["ext"].upper()
 
-                # Save to bytes in JPEG format
-                img_byte_arr = io.BytesIO()
-                img.save(img_byte_arr, format='JPEG')
-                img_byte_arr = img_byte_arr.getvalue()
+                    # Convert to RGB if needed
+                    img = PILImage.open(io.BytesIO(image_bytes))
+                    if img.mode in ['CMYK', 'P']:
+                        img = img.convert('RGB')
 
-                # Generate description using Gemini
-                description = self.image_generator.generate_description(
-                    img_byte_arr)
+                    # Convert to JPEG format
+                    img_byte_arr = io.BytesIO()
+                    img.save(img_byte_arr, format='JPEG', quality=95)
+                    img_byte_arr = img_byte_arr.getvalue()
 
-                # Create Image object
-                image_obj = Image(
-                    data=img_byte_arr,
-                    format='JPEG',
-                    description=description
-                )
-                images.append(image_obj)
+                    # Generate description using Gemini
+                    description = self.image_generator.generate_description(
+                        img_byte_arr)
 
-            except Exception as e:
-                print(f"Error processing image: {str(e)}")
-                continue
+                    # Create Image object
+                    image_obj = Image(
+                        data=img_byte_arr,
+                        format='JPEG',
+                        description=description
+                    )
+                    images.append(image_obj)
+
+                except Exception as e:
+                    print(
+                        f"Error processing image {img_index} on page {page_num + 1}: {str(e)}")
+                    continue
+
+        except Exception as e:
+            print(f"Error processing page {page_num + 1}: {str(e)}")
+        finally:
+            pdf_document.close()
 
         return images
 
@@ -96,8 +113,8 @@ class SlideProcessor:
                 # Extract tables
                 tables = self.extract_tables_from_page(page)
 
-                # Extract images (if needed)
-                images = self.extract_images(page)
+                # Extract images using PyMuPDF
+                images = self.extract_images(i)
 
                 # Clean up text content
                 text_content = self._clean_text(text_content)

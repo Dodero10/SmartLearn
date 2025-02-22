@@ -9,13 +9,11 @@ from celery.result import AsyncResult
 from chat_query.query import gen_quiz, query
 from config.celery_app import celery_app
 from config.minio_client import bucket_name, minio_client
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, EmailStr, Field
-from tasks import (delete_pdf_and_images,
-                   download_pdf_from_minio, generate_lecture,
-                   save_pdf_to_minio, upload_slide)
+from pydantic import BaseModel
+from tasks import generate_lecture, save_pdf_to_minio, upload_slide
 
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO)
@@ -141,11 +139,6 @@ async def delete_pdf(filename: str):
         else:
             raise HTTPException(status_code=500, detail="Lỗi không xác định")
 
-
-@app.options("/ai_tutor_query")
-async def ai_tutor_query_options():
-    return {"message": "OK"}
-
 @app.post("/ai_tutor_query")
 async def ai_tutor_query(query_data: TutorQuery):
     try:
@@ -180,6 +173,7 @@ def gen_quizz(filenames:list[str]):
         return quizzes
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    
 @app.get("/test")
 def test():
     data=DatabaseManager()

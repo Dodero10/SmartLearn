@@ -3,15 +3,9 @@ uvicorn
 celery==5.3.4
 redis
 minio
-python-multipart
-langchain
-langchain_core
 pymupdf>=1.23.0
-Pillow>=10.0.0
 langchain-text-splitters
 pdfplumber
-# langchain-openai
-# langchain_community
 chromadb
 python-dotenv~=1.0.1
 openai

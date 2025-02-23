@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 # Cài đặt các gói cần thiết
-RUN apt update && apt-get install -y ffmpeg &&\
+RUN apt update && apt-get install -y ffmpeg poppler-utils &&\
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 

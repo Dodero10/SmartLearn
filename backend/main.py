@@ -8,7 +8,7 @@ from celery import chain
 from celery.result import AsyncResult
 from chat_query.query import gen_quiz, query
 from config.celery_app import celery_app
-from config.minio_client import bucket_name, minio_client
+from config.minio_client import bucket_name, bucket_name_video, minio_client
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -182,7 +182,8 @@ def test():
 
 ####### Dat
 
-@app.post("/upload_slide")
+@app.post("/upload_slide", tags=["Slide2Video"])
+
 async def handle_upload_slide(file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         return {"error": "Chỉ chấp nhận file PDF"}
@@ -198,7 +199,7 @@ async def handle_upload_slide(file: UploadFile = File(...)):
 
 
 
-@app.post("/generate_lecture")
+@app.post("/generate_lecture", tags=["Slide2Video"])
 async def handle_generate_lecture(file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         return {"error": "Chỉ chấp nhận file PDF"}
@@ -208,6 +209,47 @@ async def handle_generate_lecture(file: UploadFile = File(...)):
 
     task = generate_lecture.delay(file_data, filename)
     return {"task_id": task.id, "message": "Đang xử lý lecture"}
+
+@app.get("/download_video/{filename}", tags=["Slide2Video"])
+async def download_file(filename: str):
+    task = celery_app.send_task(
+        'tasks.download_video_from_minio', args=[filename])
+    while True:
+        result = AsyncResult(task.id, app=celery_app)
+
+        if result.state == "SUCCESS":
+            file_data = result.result
+            if isinstance(file_data, bytes):
+                return StreamingResponse(
+                    io.BytesIO(file_data),
+                    media_type='video/mp4',
+                    headers={
+                        "Content-Disposition": f"attachment; filename={filename}"}
+                )
+            else:
+                raise HTTPException(
+                    status_code=500, detail="File không đúng định dạng.")
+
+        elif result.state == "FAILURE":
+            raise HTTPException(status_code=500, detail="Tải xuống thất bại.")
+
+        elif result.state == "PENDING":
+            await asyncio.sleep(1)
+
+        else:
+            raise HTTPException(status_code=500, detail="Lỗi không xác định.")
+        
+@app.get("/list_videos", tags=["Slide2Video"])
+async def list_videos():
+    try:
+        objects = minio_client.list_objects(bucket_name_video, recursive=True)
+        videos = [
+            obj.object_name for obj in objects if obj.object_name.endswith('.mp4')]
+
+        return {"videos": videos}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 ####### Dat

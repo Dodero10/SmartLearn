@@ -1,7 +1,7 @@
 import base64
 from typing import List, Optional
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 
 class Table(BaseModel):
@@ -15,7 +15,8 @@ class Image(BaseModel):
     format: str
     description: Optional[str] = None
 
-    @validator('data')
+    @field_validator('data', mode='before')
+    @classmethod
     def encode_image_data(cls, v):
         """Convert bytes to base64 string if needed"""
         if isinstance(v, bytes):

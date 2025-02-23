@@ -99,3 +99,15 @@ def generate_lecture(file_data: bytes, filename: str):
             "status": "error",
             "message": f"Error generating lecture: {str(e)}"
         }
+    
+@celery_app.task(name='tasks.download_video_from_minio')
+def download_video_from_minio(filename: str):
+    try:
+        response = minio_client.get_object(BUCKET_NAME_VIDEO, filename)
+
+        file_stream = io.BytesIO(response.read())
+        file_stream.seek(0)
+        return file_stream.getvalue()
+
+    except Exception as e:
+        return str(e)

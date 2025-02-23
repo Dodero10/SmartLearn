@@ -1,5 +1,6 @@
 import io
 from typing import Any, Dict
+from datetime import datetime
 
 from constants.constants import (BUCKET_NAME_AUDIO, BUCKET_NAME_METADATA,
                                  BUCKET_NAME_SCRIPTS, BUCKET_NAME_VIDEO)
@@ -15,13 +16,14 @@ class LectureGenerator:
     def __init__(self, file_data: bytes, filename: str):
         self.file_data = file_data
         self.filename = filename
-        self.base_filename = filename.replace('.pdf', '')
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.base_filename = f"{filename.replace('.pdf', '')}_{self.timestamp}"
 
     def _save_to_minio(self, data: bytes | str, suffix: str, bucket: str, content_type: str) -> str:
         """Helper method to save files to MinIO"""
         if isinstance(data, str):
             data = data.encode()
-
+        
         output_filename = f"{self.base_filename}{suffix}"
         save_file_to_minio(
             file_data=data,

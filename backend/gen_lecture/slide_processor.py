@@ -1,8 +1,10 @@
 import io
+from datetime import datetime
 from typing import List
 
 import fitz  # PyMuPDF
 import pdfplumber
+from config.minio_client import bucket_name_slide, minio_client
 from PIL import Image as PILImage
 
 from .image_description import ImageDescriptionGenerator
@@ -44,15 +46,18 @@ class SlideProcessor:
 
         return tables
 
-    def extract_images(self, page_num: int) -> List[Image]:
+    def extract_images(self, page_num: int, slide_name: str) -> List[Image]:
         """Extract images from PDF page using PyMuPDF"""
         images = []
 
-        # Open PDF with PyMuPDF
-        pdf_document = fitz.open(stream=self.pdf_data, filetype="pdf")
+        pdf_document = fitz.open(
+            stream=io.BytesIO(self.pdf_data), filetype="pdf")
         try:
             page = pdf_document[page_num]
             image_list = page.get_images()
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            folder_name = f"{slide_name}_{timestamp}"
 
             # Iterate through images on the page
             for img_index, img_info in enumerate(image_list):
@@ -62,29 +67,38 @@ class SlideProcessor:
                     base_image = pdf_document.extract_image(xref)
                     image_bytes = base_image["image"]
 
-                    # Get image format
-                    # Format like 'JPEG', 'PNG'
-                    image_format = base_image["ext"].upper()
-
-                    # Convert to RGB if needed
-                    img = PILImage.open(io.BytesIO(image_bytes))
+                    # Convert bytes to BytesIO for PIL
+                    img_io = io.BytesIO(image_bytes)
+                    img = PILImage.open(img_io)
                     if img.mode in ['CMYK', 'P']:
                         img = img.convert('RGB')
 
-                    # Convert to JPEG format
-                    img_byte_arr = io.BytesIO()
-                    img.save(img_byte_arr, format='JPEG', quality=95)
-                    img_byte_arr = img_byte_arr.getvalue()
+                    # Save to bytes for storage
+                    output_io = io.BytesIO()
+                    img.save(output_io, format='JPEG', quality=95)
+                    img_byte_arr = output_io.getvalue()
 
-                    # Generate description using Gemini
-                    description = self.image_generator.generate_description(
-                        img_byte_arr)
+                    # Save image to Minio
+                    image_filename = f"slide_{page_num + 1}_{img_index + 1}.jpg"
+                    minio_path = f"{folder_name}/{image_filename}"
+
+                    minio_client.put_object(
+                        bucket_name=bucket_name_slide,
+                        object_name=minio_path,
+                        data=io.BytesIO(img_byte_arr),
+                        length=len(img_byte_arr),
+                        content_type="image/jpeg"
+                    )
+
+                    # # Generate description using Gemini
+                    # description = self.image_generator.generate_description(
+                    #     img_byte_arr)
 
                     # Create Image object
                     image_obj = Image(
                         data=img_byte_arr,
                         format='JPEG',
-                        description=description
+                        # description=description
                     )
                     images.append(image_obj)
 
@@ -113,8 +127,12 @@ class SlideProcessor:
                 # Extract tables
                 tables = self.extract_tables_from_page(page)
 
-                # Extract images using PyMuPDF
-                images = self.extract_images(i)
+                # Create slide name with timestamp
+                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                slide_name = f"slide_{i + 1}_{timestamp}"
+
+                # Extract images and save to MinIO
+                images = self.extract_images(i, slide_name)
 
                 # Clean up text content
                 text_content = self._clean_text(text_content)

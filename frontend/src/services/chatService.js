@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8030";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 /**
  * Service xử lý các tương tác chat với backend
@@ -124,4 +124,68 @@ export const chatService = {
       onError(error.message); // Thông báo lỗi cho UI
     }
   },
+
+  /**
+   * Gửi câu hỏi đến AI Tutor và nhận phản hồi dạng stream
+   * 
+   * @param {string} message - Câu hỏi cần gửi
+   * @param {function} onToken - Callback xử lý từng token nhận được
+   * @param {function} onError - Callback xử lý khi có lỗi
+   */
+  sendAITutorQuery: async (
+    message,
+    onToken = (token) => {},
+    onError = (error) => {}
+  ) => {
+    try {
+      const response = await fetch(`${API_URL}/ai_tutor_query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question: message }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete data events
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep the last incomplete line in the buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const token = line.slice(6); // Remove 'data: ' prefix
+            if (token) {
+              onToken(token);
+            }
+          }
+        }
+      }
+
+      // Process any remaining data
+      if (buffer.startsWith('data: ')) {
+        const token = buffer.slice(6);
+        if (token) {
+          onToken(token);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error in AI Tutor query:', error);
+      onError(error);
+    }
+  },
 };
+

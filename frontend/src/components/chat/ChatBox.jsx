@@ -172,6 +172,7 @@ const MessagesContainer = styled.div`
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
+
   }
 
   &::-webkit-scrollbar-thumb:hover {
@@ -427,11 +428,13 @@ const ChatBox = React.forwardRef(({
   const [quizData, setQuizData] = useState(null);
   const [showQuizInterface, setShowQuizInterface] = useState(false);
   const [showVideoInterface, setShowVideoInterface] = useState(false);
+
   const [selectedFunction, setSelectedFunction] = useState(CHAT_FUNCTIONS.CHAT);
   const modelDropdownRef = useRef(null);
   const [showVideo, setShowVideo] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [showQuiz, setShowQuiz] = useState(false);
+
   
   // Kiểm tra xem cuộc hội thoại đã bắt đầu chưa
   const hasStartedChat = messages.length > 0;
@@ -523,7 +526,17 @@ const ChatBox = React.forwardRef(({
       isUser: false
     };
 
+
     setMessages(prev => [...prev, botMessage]);
+
+    if (!activeChatId && messages.length === 0) {
+      onNewChat({
+        id: threadId.current,
+        title: userMessage.slice(0, 30) + (userMessage.length > 30 ? '...' : ''),
+        timestamp: new Date(),
+      });
+    }
+
 
     try {
       switch (selectedFunction) {
@@ -556,6 +569,7 @@ const ChatBox = React.forwardRef(({
     setIsLoading(false);
   };
 
+
   const handleTutorChat = async (message, botMessageId) => {
     try {
       await chatService.sendAITutorQuery(
@@ -583,6 +597,11 @@ const ChatBox = React.forwardRef(({
       console.error('Error in AI Tutor chat:', error);
       throw error;
     }
+
+  const handleTutorChat = async (message) => {
+    // Mock response for AI Tutor
+    setMessages(prev => [...prev, { text: 'Hello', isUser: false }]);
+
   };
 
   const handleVideoConversion = async (message) => {
@@ -707,13 +726,19 @@ const ChatBox = React.forwardRef(({
 
   const handleFunctionChange = (newFunction) => {
     onFunctionChange(newFunction);
+
     setInputValue('');
+
+    setInput('');
+
     streamedMessageRef.current = '';
     setVideoId(null);
     setTranscript(null);
     setShowVideoInterface(false);
     setShowQuizInterface(false);
+
     setSelectedFunction(newFunction);
+
   };
 
   // Cập nhật placeholder text dựa trên function đang active
@@ -805,8 +830,13 @@ const ChatBox = React.forwardRef(({
                   </NewChatButton>
                 )}
                 <HeaderTitle>
+
                   {selectedFunction === CHAT_FUNCTIONS.VIDEO ? 'Slide to Video' : 
                    selectedFunction === CHAT_FUNCTIONS.QUIZ ? 'Quiz Generator' : 
+
+                  {activeFunction === 'video' ? 'Slide to Video' : 
+                   activeFunction === 'quiz' ? 'Quiz Generator' : 
+
                    'AI Tutor Chat'}
                 </HeaderTitle>
               </HeaderLeft>

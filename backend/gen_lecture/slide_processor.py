@@ -17,10 +17,7 @@ class SlideProcessor:
         self.pdf_data = pdf_data
         self.filename = filename
         self.image_generator = ImageDescriptionGenerator()
-        # Create folder name when initializing with Vietnam timezone
-        vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-        timestamp = datetime.now(vietnam_tz).strftime("%Y%m%d_%H%M%S")
-        self.folder_name = f"{filename.replace('.pdf', '')}_{timestamp}"
+        self.folder_name = f"{filename.replace('.pdf', '')}"
 
     def extract_text_from_page(self, page) -> tuple[str, str]:
         """Extract text from PDF page"""
@@ -40,7 +37,7 @@ class SlideProcessor:
         tables = []
 
         for table_data in tables_data:
-            if table_data and len(table_data) > 1:  # Has header and data
+            if table_data and len(table_data) > 1:
                 headers = table_data[0]
                 rows = table_data[1:]
 
@@ -62,7 +59,6 @@ class SlideProcessor:
     def save_original_pdf(self):
         """Save the original PDF file to MinIO"""
         try:
-            # Save original PDF
             pdf_path = f"{self.folder_name}/{self.filename}"
             minio_client.put_object(
                 bucket_name=bucket_name_slide,

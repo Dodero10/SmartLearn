@@ -24,14 +24,12 @@ class VideoGenerator:
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 1
         thickness = 2
-        color = (255, 255, 255)  # White text
+        color = (255, 255, 255)
 
-        # Add black background for text
         text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
         text_x = width - text_size[0] - 10
         text_y = height - 10
 
-        # Draw black background
         cv2.rectangle(
             image,
             (text_x - 5, text_y + 5),
@@ -40,7 +38,6 @@ class VideoGenerator:
             -1
         )
 
-        # Draw text
         cv2.putText(
             image,
             text,
@@ -56,23 +53,18 @@ class VideoGenerator:
     def generate_video(self) -> bytes:
         """Generate lecture video combining slides and audio"""
         try:
-            # Create temporary directory for audio files
             with tempfile.TemporaryDirectory() as temp_dir:
                 video_path = os.path.join(temp_dir, 'output.mp4')
                 combined_audio_path = os.path.join(temp_dir, 'combined.mp3')
 
-                # Convert PDF to images
                 slides = convert_from_bytes(self.pdf_data, fmt='png', dpi=150)
 
-                # Validate number of slides matches number of audio files
                 if len(slides) != len(self.audio_files):
                     raise ValueError(
                         f"Number of slides ({len(slides)}) does not match number of audio files ({len(self.audio_files)})")
 
-                # Get dimensions from first slide
                 height, width = np.array(slides[0]).shape[:2]
 
-                # Initialize video writer
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(
                     video_path,
@@ -81,27 +73,21 @@ class VideoGenerator:
                     (width, height)
                 )
 
-                # Process audio files and create video frames
                 audio_segments = []
                 total_frames = 0
-                frame_timings = []  # Store when to change slides
+                frame_timings = []
 
-                # First pass: calculate total duration and frame timings
                 for i, (_, audio_data) in enumerate(self.audio_files):
                     try:
-                        # Save and load audio segment
                         audio_path = os.path.join(temp_dir, f'audio_{i}.mp3')
                         with open(audio_path, 'wb') as f:
                             f.write(audio_data)
                         audio_segment = AudioSegment.from_mp3(audio_path)
                         audio_segments.append(audio_segment)
 
-                        # Calculate frames needed for this segment
-                        duration = len(audio_segment) / \
-                            1000.0  # Convert to seconds
+                        duration = len(audio_segment) / 1000.0
                         n_frames = int(duration * self.fps)
                         total_frames += n_frames
-                        # Store frame number when to change slide
                         frame_timings.append((total_frames, i))
                     except Exception as e:
                         raise Exception(
@@ -111,7 +97,6 @@ class VideoGenerator:
                     raise ValueError(
                         "No audio segments were processed successfully")
 
-                # Combine all audio segments
                 try:
                     combined_audio = audio_segments[0]
                     for segment in audio_segments[1:]:
@@ -121,14 +106,11 @@ class VideoGenerator:
                     raise Exception(
                         f"Error combining audio segments: {str(e)}")
 
-                # Second pass: generate video frames
                 current_frame = 0
                 current_slide_idx = 0
 
-                # Generate frames for each timing point
                 while current_frame < total_frames:
                     try:
-                        # Find which slide to show
                         next_slide_found = False
                         for end_frame, slide_idx in frame_timings:
                             if current_frame < end_frame:
@@ -137,10 +119,8 @@ class VideoGenerator:
                                 break
 
                         if not next_slide_found:
-                            # Show last slide if no timing found
                             current_slide_idx = len(slides) - 1
 
-                        # Ensure slide index is valid
                         if current_slide_idx >= len(slides):
                             raise ValueError(
                                 f"Invalid slide index {current_slide_idx} for {len(slides)} slides")

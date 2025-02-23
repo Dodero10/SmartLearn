@@ -18,9 +18,9 @@ class LectureGenerator:
         self.file_data = file_data
         self.filename = filename
         # Create base filename with Vietnam timezone
-        vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-        timestamp = datetime.now(vietnam_tz).strftime("%Y%m%d_%H%M%S")
-        self.base_filename = f"{filename.replace('.pdf', '')}_{timestamp}"
+        # vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+        # timestamp = datetime.now(vietnam_tz).strftime("%Y%m%d_%H%M%S")
+        self.base_filename = f"{filename.replace('.pdf', '')}"
 
     def _save_to_minio(self, data: bytes | str, suffix: str, bucket: str, content_type: str) -> str:
         """Helper method to save files to MinIO"""
@@ -43,7 +43,7 @@ class LectureGenerator:
             processor = SlideProcessor(self.file_data, self.filename)
             lecture_metadata = processor.process_slides()
             # Use the same folder name as slides for file names
-            self.base_filename = processor.folder_name.split('/')[-1]
+            self.base_filename = processor.folder_name
 
             # 2. Save metadata
             metadata_filename = self._save_to_minio(

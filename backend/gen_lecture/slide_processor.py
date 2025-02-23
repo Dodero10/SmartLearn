@@ -4,6 +4,7 @@ from typing import List
 
 import fitz  # PyMuPDF
 import pdfplumber
+import pytz
 from config.minio_client import bucket_name_slide, minio_client
 from PIL import Image as PILImage
 
@@ -16,6 +17,10 @@ class SlideProcessor:
         self.pdf_data = pdf_data
         self.filename = filename
         self.image_generator = ImageDescriptionGenerator()
+        # Create folder name when initializing with Vietnam timezone
+        vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+        timestamp = datetime.now(vietnam_tz).strftime("%Y%m%d_%H%M%S")
+        self.folder_name = f"{filename.replace('.pdf', '')}_{timestamp}"
 
     def extract_text_from_page(self, page) -> tuple[str, str]:
         """Extract text from PDF page"""
@@ -38,15 +43,40 @@ class SlideProcessor:
             if table_data and len(table_data) > 1:  # Has header and data
                 headers = table_data[0]
                 rows = table_data[1:]
-                table = Table(
+
+                # Generate description for the table
+                description = self.image_generator.generate_table_description(
                     columns=headers,
                     rows=rows
+                )
+
+                table = Table(
+                    columns=headers,
+                    rows=rows,
+                    description=description
                 )
                 tables.append(table)
 
         return tables
 
-    def extract_images(self, page_num: int, slide_name: str) -> List[Image]:
+    def save_original_pdf(self):
+        """Save the original PDF file to MinIO"""
+        try:
+            # Save original PDF
+            pdf_path = f"{self.folder_name}/{self.filename}"
+            minio_client.put_object(
+                bucket_name=bucket_name_slide,
+                object_name=pdf_path,
+                data=io.BytesIO(self.pdf_data),
+                length=len(self.pdf_data),
+                content_type='application/pdf'
+            )
+            return pdf_path
+        except Exception as e:
+            print(f"Error saving original PDF: {str(e)}")
+            return None
+
+    def extract_images(self, page_num: int) -> List[Image]:
         """Extract images from PDF page using PyMuPDF"""
         images = []
 
@@ -55,9 +85,6 @@ class SlideProcessor:
         try:
             page = pdf_document[page_num]
             image_list = page.get_images()
-
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            folder_name = f"{slide_name}_{timestamp}"
 
             # Iterate through images on the page
             for img_index, img_info in enumerate(image_list):
@@ -78,9 +105,13 @@ class SlideProcessor:
                     img.save(output_io, format='JPEG', quality=95)
                     img_byte_arr = output_io.getvalue()
 
-                    # Save image to Minio
-                    image_filename = f"slide_{page_num + 1}_{img_index + 1}.jpg"
-                    minio_path = f"{folder_name}/{image_filename}"
+                    # Generate image description
+                    description = self.image_generator.generate_description(
+                        img_byte_arr)
+
+                    # Save image to Minio with new naming convention
+                    image_filename = f"slide{page_num + 1}_{img_index + 1}.jpg"
+                    minio_path = f"{self.folder_name}/{image_filename}"
 
                     minio_client.put_object(
                         bucket_name=bucket_name_slide,
@@ -90,15 +121,11 @@ class SlideProcessor:
                         content_type="image/jpeg"
                     )
 
-                    # # Generate description using Gemini
-                    # description = self.image_generator.generate_description(
-                    #     img_byte_arr)
-
-                    # Create Image object
+                    # Create Image object with path and description
                     image_obj = Image(
-                        data=img_byte_arr,
+                        path=minio_path,
                         format='JPEG',
-                        # description=description
+                        description=description
                     )
                     images.append(image_obj)
 
@@ -116,9 +143,14 @@ class SlideProcessor:
 
     def process_slides(self) -> LectureMetadata:
         """Process PDF slides and extract metadata"""
-        pdf_stream = io.BytesIO(self.pdf_data)
+        # First save the original PDF
+        pdf_path = self.save_original_pdf()
+        if not pdf_path:
+            raise Exception("Failed to save original PDF")
 
+        pdf_stream = io.BytesIO(self.pdf_data)
         slide_metadata_list = []
+
         with pdfplumber.open(pdf_stream) as pdf:
             for i, page in enumerate(pdf.pages):
                 # Extract text
@@ -127,12 +159,8 @@ class SlideProcessor:
                 # Extract tables
                 tables = self.extract_tables_from_page(page)
 
-                # Create slide name with timestamp
-                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                slide_name = f"slide_{i + 1}_{timestamp}"
-
                 # Extract images and save to MinIO
-                images = self.extract_images(i, slide_name)
+                images = self.extract_images(i)
 
                 # Clean up text content
                 text_content = self._clean_text(text_content)

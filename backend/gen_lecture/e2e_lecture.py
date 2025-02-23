@@ -1,7 +1,8 @@
 import io
-from typing import Any, Dict
 from datetime import datetime
+from typing import Any, Dict, List
 
+import pytz
 from constants.constants import (BUCKET_NAME_AUDIO, BUCKET_NAME_METADATA,
                                  BUCKET_NAME_SCRIPTS, BUCKET_NAME_VIDEO)
 from utils.minio_utils import save_file_to_minio
@@ -16,14 +17,16 @@ class LectureGenerator:
     def __init__(self, file_data: bytes, filename: str):
         self.file_data = file_data
         self.filename = filename
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.base_filename = f"{filename.replace('.pdf', '')}_{self.timestamp}"
+        # Create base filename with Vietnam timezone
+        vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+        timestamp = datetime.now(vietnam_tz).strftime("%Y%m%d_%H%M%S")
+        self.base_filename = f"{filename.replace('.pdf', '')}_{timestamp}"
 
     def _save_to_minio(self, data: bytes | str, suffix: str, bucket: str, content_type: str) -> str:
         """Helper method to save files to MinIO"""
         if isinstance(data, str):
             data = data.encode()
-        
+
         output_filename = f"{self.base_filename}{suffix}"
         save_file_to_minio(
             file_data=data,
@@ -39,6 +42,8 @@ class LectureGenerator:
             # 1. Process slides and extract metadata
             processor = SlideProcessor(self.file_data, self.filename)
             lecture_metadata = processor.process_slides()
+            # Use the same folder name as slides for file names
+            self.base_filename = processor.folder_name.split('/')[-1]
 
             # 2. Save metadata
             metadata_filename = self._save_to_minio(
@@ -50,27 +55,42 @@ class LectureGenerator:
 
             # 3. Generate and save script
             script_generator = ScriptGenerator(lecture_metadata)
-            script = script_generator.generate_script()
+            full_script, slide_scripts = script_generator.generate_script()
             script_filename = self._save_to_minio(
-                script,
+                full_script,
                 "_script.txt",
                 BUCKET_NAME_SCRIPTS,
                 "text/plain"
             )
 
-            # 4. Generate and save audio
+            # Save individual slide scripts
+            slide_script_filenames = []
+            for i, script in enumerate(slide_scripts, 1):
+                filename = self._save_to_minio(
+                    script,
+                    f"/scripts/slide{i}_script.txt",
+                    BUCKET_NAME_SCRIPTS,
+                    "text/plain"
+                )
+                slide_script_filenames.append(filename)
+
+            # 4. Generate and save audio for each slide
             audio_generator = AudioGenerator(lecture_metadata)
-            audio_data = audio_generator.generate_audio()
-            audio_filename = self._save_to_minio(
-                audio_data,
-                ".mp3",
-                BUCKET_NAME_AUDIO,
-                "audio/mpeg"
-            )
+            audio_files = audio_generator.generate_audio()
+            audio_filenames = []
+
+            for audio_filename, audio_data in audio_files:
+                full_filename = self._save_to_minio(
+                    audio_data,
+                    f"/audio/{audio_filename}",
+                    BUCKET_NAME_AUDIO,
+                    "audio/mpeg"
+                )
+                audio_filenames.append(full_filename)
 
             # 5. Generate and save video
             video_generator = VideoGenerator(
-                lecture_metadata, self.file_data, audio_data)
+                lecture_metadata, self.file_data, audio_files)
             video_data = video_generator.generate_video()
             video_filename = self._save_to_minio(
                 video_data,
@@ -84,7 +104,8 @@ class LectureGenerator:
                 "message": "Lecture generation completed successfully",
                 "metadata_file": metadata_filename,
                 "script_file": script_filename,
-                "audio_file": audio_filename,
+                "slide_scripts": slide_script_filenames,
+                "audio_files": audio_filenames,
                 "video_file": video_filename
             }
 

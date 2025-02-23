@@ -8,7 +8,7 @@ from celery import chain
 from celery.result import AsyncResult
 from chat_query.query import gen_quiz, query
 from config.celery_app import celery_app
-from config.minio_client import bucket_name, bucket_name_video, minio_client
+from config.minio_client import bucket_name, bucket_name_video, minio_client, bucket_name_script
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -251,5 +251,15 @@ async def list_videos():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+@app.get("/list_scripts", tags=["Slide2Video"])
+async def list_scripts():
+    try:
+        objects = minio_client.list_objects(bucket_name_script, recursive=True)
+        scripts = [
+            obj.object_name for obj in objects if obj.object_name.endswith('.txt')]
 
+        return {"scripts": scripts}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 ####### Dat

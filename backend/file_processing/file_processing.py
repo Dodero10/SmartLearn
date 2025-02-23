@@ -1,8 +1,7 @@
 from utils.parse_data import ParseHandler
 from utils.chunking import Chunking
 import os
-import typing as tp
-import copy
+
 
 api_key = os.environ["OPENAI_API_KEY"]
 

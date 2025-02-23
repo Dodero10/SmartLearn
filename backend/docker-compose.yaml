@@ -1,6 +1,36 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  redis:
+    image: "redis:6"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+
+  minio:
+    image: "minio/minio"
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
   web:
     build: .
     container_name: fastapi_app
@@ -11,47 +41,28 @@ services:
       - ./.env
     volumes:
       - .:/app
+      - chromadb_data:/app/chromadb
     depends_on:
-      - redis
-      - minio
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
   celery_worker:
     build: .
     container_name: celery_worker
-    command: celery -A celery_app.celery_app worker --loglevel=info
-    depends_on:
-      - redis
+    command: celery -A config.celery_app.celery_app worker --loglevel=info
     volumes:
       - .:/app
+      - chromadb_data:/app/chromadb
     env_file:
       - ./.env
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-
-  redis:
-    image: "redis:6"
-    container_name: redis
-    ports:
-      - "6379:6379"
-
-  minio:
-    image: "minio/minio"
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    env_file:
-      - ./.env
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
 volumes:
   minio_data:
+  chromadb_data:

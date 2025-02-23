@@ -8,7 +8,8 @@ from celery import chain
 from celery.result import AsyncResult
 from chat_query.query import gen_quiz, query
 from config.celery_app import celery_app
-from config.minio_client import bucket_name, bucket_name_video, minio_client, bucket_name_script
+from config.minio_client import (bucket_name, bucket_name_script,
+                                 bucket_name_video, minio_client)
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -139,6 +140,7 @@ async def delete_pdf(filename: str):
         else:
             raise HTTPException(status_code=500, detail="Lỗi không xác định")
 
+
 @app.post("/ai_tutor_query")
 async def ai_tutor_query(query_data: TutorQuery):
     try:
@@ -166,24 +168,25 @@ async def ai_tutor_query(query_data: TutorQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/gen_quizz")
-def gen_quizz(filenames:list[str]):
+def gen_quizz(filenames: list[str]):
     try:
-        quizzes=gen_quiz(filenames=filenames)
+        quizzes = gen_quiz(filenames=filenames)
         return quizzes
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-    
+
+
 @app.get("/test")
 def test():
-    data=DatabaseManager()
+    data = DatabaseManager()
     return data.collection.get()
 
 
-####### Dat
+# Dat
 
 @app.post("/upload_slide", tags=["Slide2Video"])
-
 async def handle_upload_slide(file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         return {"error": "Chỉ chấp nhận file PDF"}
@@ -193,10 +196,8 @@ async def handle_upload_slide(file: UploadFile = File(...)):
     filename = file.filename
 
     task = upload_slide.delay(file_data, filename)
-    
-    return {"task_id": task.id, "message": "File đang được tải lên"}
-    
 
+    return {"task_id": task.id, "message": "File đang được tải lên"}
 
 
 @app.post("/generate_lecture", tags=["Slide2Video"])
@@ -209,6 +210,7 @@ async def handle_generate_lecture(file: UploadFile = File(...)):
 
     task = generate_lecture.delay(file_data, filename)
     return {"task_id": task.id, "message": "Đang xử lý lecture"}
+
 
 @app.get("/download_video/{filename}", tags=["Slide2Video"])
 async def download_file(filename: str):
@@ -238,7 +240,8 @@ async def download_file(filename: str):
 
         else:
             raise HTTPException(status_code=500, detail="Lỗi không xác định.")
-        
+
+
 @app.get("/list_videos", tags=["Slide2Video"])
 async def list_videos():
     try:
@@ -251,6 +254,7 @@ async def list_videos():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+
 @app.get("/list_scripts", tags=["Slide2Video"])
 async def list_scripts():
     try:
@@ -262,4 +266,67 @@ async def list_scripts():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-####### Dat
+
+
+@app.get("/get_script/{filename}", tags=["Slide2Video"])
+async def get_script(filename: str):
+    task = celery_app.send_task(
+        'tasks.download_script_from_minio', args=[filename])
+    while True:
+        result = AsyncResult(task.id, app=celery_app)
+
+        if result.state == "SUCCESS":
+            script_content = result.result
+            if isinstance(script_content, str):
+                return {"script": script_content}
+            else:
+                raise HTTPException(
+                    status_code=500, detail="Không thể đọc nội dung script.")
+
+        elif result.state == "FAILURE":
+            raise HTTPException(status_code=500, detail="Tải script thất bại.")
+
+        elif result.state == "PENDING":
+            await asyncio.sleep(1)
+
+        else:
+            raise HTTPException(status_code=500, detail="Lỗi không xác định.")
+# Dat
+
+
+@app.delete("/delete_lecture/{filename}", tags=["Slide2Video"])
+async def delete_lecture_files(filename: str):
+    task = celery_app.send_task('tasks.delete_lecture', args=[filename])
+
+    while True:
+        result = AsyncResult(task.id, app=celery_app)
+
+        if result.state == "SUCCESS":
+            task_result = result.result
+            if isinstance(task_result, dict):
+                if task_result["status"] == "error":
+                    raise HTTPException(
+                        status_code=500,
+                        detail=task_result["message"]
+                    )
+                return task_result
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Không thể xóa lecture."
+                )
+
+        elif result.state == "FAILURE":
+            raise HTTPException(
+                status_code=500,
+                detail="Xóa lecture thất bại."
+            )
+
+        elif result.state == "PENDING":
+            await asyncio.sleep(1)
+
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Lỗi không xác định."
+            )

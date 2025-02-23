@@ -4,7 +4,6 @@ from typing import List
 
 import fitz  # PyMuPDF
 import pdfplumber
-import pytz
 from config.minio_client import bucket_name_slide, minio_client
 from PIL import Image as PILImage
 

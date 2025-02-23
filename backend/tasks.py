@@ -138,3 +138,88 @@ def download_video_from_minio(filename: str):
 
     except Exception as e:
         return str(e)
+
+
+@celery_app.task(name='tasks.download_script_from_minio')
+def download_script_from_minio(filename: str):
+    try:
+        # Convert filename from pdf to txt and get the folder structure
+        folder_name = filename.replace('.pdf', '')
+        script_path = f"{folder_name}/{folder_name}.txt"
+
+        response = minio_client.get_object(BUCKET_NAME_SCRIPTS, script_path)
+
+        file_stream = io.BytesIO(response.read())
+        file_stream.seek(0)
+        return file_stream.getvalue().decode('utf-8')  # Return as text instead of bytes
+
+    except Exception as e:
+        return str(e)
+
+
+@celery_app.task(name='tasks.delete_lecture')
+def delete_lecture(filename: str):
+    try:
+        base_filename = filename.replace('.pdf', '')
+        deleted_files = []
+        errors = []
+
+        # Delete metadata file
+        try:
+            metadata_path = f"{base_filename}.json"
+            minio_client.remove_object(BUCKET_NAME_METADATA, metadata_path)
+            deleted_files.append(f"metadata: {metadata_path}")
+        except Exception as e:
+            errors.append(f"Error deleting metadata: {str(e)}")
+
+        # Delete all script files in the folder
+        try:
+            script_objects = minio_client.list_objects(
+                BUCKET_NAME_SCRIPTS, prefix=f"{base_filename}/")
+            for obj in script_objects:
+                minio_client.remove_object(
+                    BUCKET_NAME_SCRIPTS, obj.object_name)
+                deleted_files.append(f"script: {obj.object_name}")
+        except Exception as e:
+            errors.append(f"Error deleting scripts: {str(e)}")
+
+        # Delete all slide files in the folder
+        try:
+            slide_objects = minio_client.list_objects(
+                BUCKET_NAME_SLIDE, prefix=f"{base_filename}/")
+            for obj in slide_objects:
+                minio_client.remove_object(
+                    BUCKET_NAME_SLIDE, obj.object_name)
+                deleted_files.append(f"slide: {obj.object_name}")
+        except Exception as e:
+            errors.append(f"Error deleting slides: {str(e)}")
+
+        # Delete audio files
+        try:
+            audio_objects = minio_client.list_objects(
+                BUCKET_NAME_AUDIO, prefix=f"{base_filename}/")
+            for obj in audio_objects:
+                minio_client.remove_object(BUCKET_NAME_AUDIO, obj.object_name)
+                deleted_files.append(f"audio: {obj.object_name}")
+        except Exception as e:
+            errors.append(f"Error deleting audio files: {str(e)}")
+
+        # Delete video file
+        try:
+            video_path = f"{base_filename}.mp4"
+            minio_client.remove_object(BUCKET_NAME_VIDEO, video_path)
+            deleted_files.append(f"video: {video_path}")
+        except Exception as e:
+            errors.append(f"Error deleting video: {str(e)}")
+
+        return {
+            "status": "success" if not errors else "partial_success",
+            "deleted_files": deleted_files,
+            "errors": errors
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }

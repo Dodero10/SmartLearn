@@ -1,8 +1,5 @@
-import io
-from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-import pytz
 from constants.constants import (BUCKET_NAME_AUDIO, BUCKET_NAME_METADATA,
                                  BUCKET_NAME_SCRIPTS, BUCKET_NAME_VIDEO)
 from utils.minio_utils import save_file_to_minio
@@ -17,9 +14,6 @@ class LectureGenerator:
     def __init__(self, file_data: bytes, filename: str):
         self.file_data = file_data
         self.filename = filename
-        # Create base filename with Vietnam timezone
-        # vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-        # timestamp = datetime.now(vietnam_tz).strftime("%Y%m%d_%H%M%S")
         self.base_filename = f"{filename.replace('.pdf', '')}"
 
     def _save_to_minio(self, data: bytes | str, suffix: str, bucket: str, content_type: str) -> str:
@@ -27,7 +21,16 @@ class LectureGenerator:
         if isinstance(data, str):
             data = data.encode()
 
-        output_filename = f"{self.base_filename}{suffix}"
+        # For scripts, create a folder structure
+        if bucket == BUCKET_NAME_SCRIPTS:
+            folder_name = self.base_filename
+            if suffix.startswith("/"):
+                output_filename = f"{folder_name}{suffix}"
+            else:
+                output_filename = f"{folder_name}/{suffix}"
+        else:
+            output_filename = f"{self.base_filename}{suffix}"
+
         save_file_to_minio(
             file_data=data,
             filename=output_filename,
@@ -48,7 +51,7 @@ class LectureGenerator:
             # 2. Save metadata
             metadata_filename = self._save_to_minio(
                 lecture_metadata.json(),
-                "_metadata.json",
+                ".json",
                 BUCKET_NAME_METADATA,
                 "application/json"
             )
@@ -56,19 +59,23 @@ class LectureGenerator:
             # 3. Generate and save script
             script_generator = ScriptGenerator(lecture_metadata)
             full_script, slide_scripts = script_generator.generate_script()
+
+            print(full_script)  # Phúc lấy ở đây
+
+            # Save main script with just the base name
             script_filename = self._save_to_minio(
                 full_script,
-                "_script.txt",
+                f"/{self.base_filename}.txt",
                 BUCKET_NAME_SCRIPTS,
                 "text/plain"
             )
 
-            # Save individual slide scripts
+            # Save individual slide scripts in the same folder
             slide_script_filenames = []
             for i, script in enumerate(slide_scripts, 1):
                 filename = self._save_to_minio(
                     script,
-                    f"/scripts/slide{i}_script.txt",
+                    f"slide_{i}_script.txt",
                     BUCKET_NAME_SCRIPTS,
                     "text/plain"
                 )
@@ -82,7 +89,7 @@ class LectureGenerator:
             for audio_filename, audio_data in audio_files:
                 full_filename = self._save_to_minio(
                     audio_data,
-                    f"/audio/{audio_filename}",
+                    f"/{audio_filename}",
                     BUCKET_NAME_AUDIO,
                     "audio/mpeg"
                 )

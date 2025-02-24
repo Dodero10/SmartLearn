@@ -1,0 +1,65 @@
+=== Slide 1: LLM Apps ===
+
+Xin chào các bạn, hôm nay chúng ta sẽ cùng khám phá một chủ đề thú vị mang tên "LLM Apps", mà trong đó "LLM" là viết tắt của "Large Language Model Applications" - tức là những ứng dụng sử dụng các mô hình ngôn ngữ lớn. 
+
+Trên slide này, chúng ta có một số thông tin quan trọng mà tôi muốn làm rõ. Đầu tiên, tiêu đề chính "LLM Apps" cho thấy nội dung chính sẽ xoay quanh việc sử dụng và ứng dụng các mô hình ngôn ngữ lớn. Đây là những công nghệ tiên tiến đã và đang có ảnh hưởng sâu rộng đến nhiều lĩnh vực, bao gồm cả khoa học, giáo dục và kinh doanh.
+
+Tiếp theo, chúng ta có tiêu đề phụ "End to End Apps with Streamlit". Điều này mang lại cho chúng ta một cái nhìn rõ hơn về loại ứng dụng chúng ta sẽ gặp. Từ "End-to-end" ám chỉ rằng chúng ta sẽ xây dựng một ứng dụng hoàn chỉnh, bao gồm tất cả các bước từ đầu đến cuối, không chỉ là phần giao diện người dùng mà còn là xử lý dữ liệu phía sau. 
+
+Chúng ta cũng thấy "Streamlit" được đề cập. Đây là một thư viện Python mã nguồn mở rất phổ biến, giúp chúng ta dễ dàng tạo ra giao diện người dùng cho các ứng dụng máy học và dữ liệu khoa học. Vì vậy, tài liệu hoặc ứng dụng mà chúng ta sẽ khám phá sẽ hướng dẫn chúng ta cách xây dựng những ứng dụng LLM hoàn chỉnh bằng cách tận dụng Streamlit.
+
+Cuối cùng, thông tin bản quyền "© 2023 Julio Colomer, AI Accelera" cho chúng ta biết rằng tác giả hoặc chủ sở hữu của tài liệu này là Julio Colomer vào năm 2023, và "AI Accelera" có thể là tên của một tổ chức, công ty hoặc dự án gắn liền với ông.
+
+Tóm lại, chúng ta đang có cơ hội tìm hiểu về cách thức kết hợp LLM với Streamlit để phát triển những ứng dụng thực tế và thiết thực. 
+
+Giờ đây, chúng ta sẽ chuyển sang slide tiếp theo có tiêu đề "Notes", nơi tôi sẽ trình bày những ghi chú quan trọng và thông tin bổ sung liên quan đến chủ đề này. Hãy cùng theo dõi!
+
+---
+
+=== Slide 2: Notes ===
+
+Chào các bạn, hôm nay chúng ta sẽ khám phá một số thông tin thú vị liên quan đến các chương khác trong tài liệu của chúng ta.
+
+Trước tiên, trong phần ghi chú này, có một số chương mà tôi muốn các bạn lưu ý, bao gồm từ "Proof of Concept" đến "Sản xuất", cũng như những nội dung liên quan như "Basic Streamlit" và "Advanced RAG Techniques". Những chương này có thể giúp các bạn có cái nhìn sâu hơn và hiểu rõ hơn về các khía cạnh khác nhau của quản lý dự án và phát triển ứng dụng.
+
+Tiếp theo, chúng ta hãy nói về Streamlit. Streamlit thực sự là một giải pháp rất phù hợp cho giai đoạn Proof of Concept. Với Streamlit, chúng ta có thể dễ dàng trình bày và kiểm tra một ứng dụng End to End. Đây không chỉ là một cách nhanh chóng và đơn giản để có được giao diện cho ứng dụng LLM của bạn, mà còn có thể được tải lên đám mây một cách miễn phí. Điều này cho phép chúng ta tiết kiệm thời gian và chi phí khi phát triển ứng dụng.
+
+Bên cạnh đó, các ứng dụng mà chúng ta phát triển đều rất đơn giản nhưng cũng không kém phần chức năng. Tuy nhiên, các bạn cũng cần lưu ý rằng một số ứng dụng này có thể không hoạt động trong tương lai nếu các gói mà chúng dựa vào được cập nhật và thay đổi cách thức hoạt động. Vì vậy, điều quan trọng chính là chúng ta hãy tập trung vào việc học hỏi và nắm bắt các khái niệm chủ chốt từ những gì chúng ta đang làm.
+
+Bây giờ, để hiểu rõ hơn về cách mà Streamlit có thể hỗ trợ chúng ta trong việc phát triển các ứng dụng End to End, chúng ta sẽ chuyển sang slide tiếp theo với tiêu đề "End to End Apps with Streamlit". Hãy cùng khám phá nhé!
+
+---
+
+=== Slide 3: End to End Apps with Streamlit ===
+
+**Script Bài Giảng: End to End Apps with Streamlit**
+
+---
+
+Xin chào các bạn, hôm nay chúng ta sẽ cùng nhau khám phá một chủ đề rất thú vị: "End to End Apps with Streamlit". Streamlit là một công cụ mạnh mẽ giúp chúng ta xây dựng các ứng dụng tương tác một cách dễ dàng và nhanh chóng. Trong bài giảng hôm nay, tôi sẽ trình bày ba loại ứng dụng chính mà chúng ta có thể phát triển với Streamlit: ứng dụng viết, ứng dụng tóm tắt, và ứng dụng trích xuất.
+
+Đầu tiên, chúng ta sẽ nói về **ứng dụng viết**. Một ứng dụng viết có thể phục vụ nhiều mục đích khác nhau. Chẳng hạn như:
+
+- **Cải thiện viết**: Với ứng dụng này, người dùng có thể nhận được sự hỗ trợ trong việc cải thiện kỹ năng viết của bản thân. Ứng dụng có thể đưa ra phản hồi về ngữ pháp, từ vựng, và cả phong cách viết.
+  
+- **Tạo file PDF**: Một ứng dụng viết khác cho phép người dùng tạo ra các tài liệu PDF từ nội dung mà họ đã viết. Điều này rất hữu ích cho việc chia sẻ tài liệu với đồng nghiệp hoặc xuất bản.
+
+- **Viết blog từ một chủ đề**: Ứng dụng có thể giúp người dùng phát triển nội dung bài viết blog dựa trên một chủ đề được chỉ định. Điều này không chỉ tiết kiệm thời gian mà còn cung cấp cho người viết những ý tưởng mới mẻ.
+
+- **Xuất file CSV**: Cuối cùng, ứng dụng viết cũng có khả năng chuyển đổi dữ liệu thành định dạng CSV, rất phổ biến trong việc lưu trữ và xử lý dữ liệu.
+
+Tiếp theo, chúng ta sẽ chuyển sang **các ứng dụng tóm tắt**. Những ứng dụng này cho phép người dùng rút ra các thông tin quan trọng từ một văn bản dài. 
+
+Tiếp theo là **ứng dụng đánh giá**. Chúng ta có thể sử dụng ứng dụng đánh giá để:
+
+- **Làm việc với file TXT**: Người dùng có thể nộp một file TXT, và ứng dụng sẽ giúp họ đánh giá nội dung trong đó, chẳng hạn như độ rõ ràng hay tính tường minh.
+
+- **Đánh giá một ứng dụng RAG**: RAG, hay còn gọi là Retrieval-Augmented Generation, là một phương pháp rất hiệu quả trong việc tạo ra nội dung. Ứng dụng đánh giá sẽ giúp người dùng kiểm tra xem một ứng dụng RAG có hoạt động hiệu quả hay không.
+
+- **Viết văn bản**: Tương tự như các ứng dụng viết, các ứng dụng đánh giá cũng có thể yêu cầu người dùng viết văn bản và đánh giá nội dung đó theo các tiêu chí nhất định.
+
+Cuối cùng là **ứng dụng trích xuất**. Chúng có thể giúp rút ra thông tin chính từ các đánh giá sản phẩm, điều này rất hữu ích cho việc phân tích quan điểm khách hàng và cải thiện chất lượng sản phẩm.
+
+Đó là nội dung chính mà chúng ta sẽ cùng thảo luận hôm nay về cách tạo ra các ứng dụng từ đầu đến cuối với Streamlit. Trong các phần sau, chúng ta sẽ đi sâu vào từng loại ứng dụng này và tìm hiểu cách triển khai cụ thể chúng một cách hiệu quả. Cảm ơn các bạn đã lắng nghe!
+
+---

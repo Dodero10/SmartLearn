@@ -11,17 +11,9 @@ class Table(BaseModel):
 
 
 class Image(BaseModel):
-    data: str  # base64 encoded image data
+    path: str  # path in MinIO
     format: str
     description: Optional[str] = None
-
-    @field_validator('data', mode='before')
-    @classmethod
-    def encode_image_data(cls, v):
-        """Convert bytes to base64 string if needed"""
-        if isinstance(v, bytes):
-            return base64.b64encode(v).decode('utf-8')
-        return v
 
 
 class SlideMetadata(BaseModel):

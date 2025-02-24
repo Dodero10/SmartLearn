@@ -13,7 +13,7 @@ google-cloud-texttospeech
 opencv-python-headless
 pdf2image
 numpy
-pydub
+pydub==0.25.1
 google-generativeai
 google-genai
 graphrag==0.3.6

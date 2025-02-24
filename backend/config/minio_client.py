@@ -1,5 +1,6 @@
 from minio import Minio
 import os
+
 minio_client = Minio(
     "minio:9000",
     access_key=os.environ["ACCESS_KEY"],
@@ -12,6 +13,7 @@ bucket_name_slide = "slides"
 bucket_name_video = "videos"
 bucket_name_audio = "audios"
 bucket_name_script = "scripts"
+bucket_name_metadata = "metadata"
 
 if not minio_client.bucket_exists(bucket_name):
     minio_client.make_bucket(bucket_name)

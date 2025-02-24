@@ -177,7 +177,8 @@ class QuestionType:
         systemt_contents=  f"""
             Bạn là một trợ lý AI chuyên tạo câu hỏi trắc nghiệm từ văn bản. 
             Nhiệm vụ của bạn là đọc đoạn văn sau và tạo ra *nhiều câu hỏi trắc nghiệm* với *4 lựa chọn trả lời*, trong đó chỉ có *một đáp án đúng* cho mỗi câu hỏi.  
-            Hãy tự quyết định số lượng câu hỏi phù hợp dựa trên độ dài và nội dung của đoạn văn.  
+            Hãy tự quyết định số lượng câu hỏi phù hợp dựa trên độ dài và nội dung của đoạn văn. 
+            Nếu câu hỏi liên quan đến việc tóm tắt, mục đích hoặc những thứ chung chung của một đoạn văn trong văn bản đầu vào ví dụ: "Đoạn văn sau nói về điều gì" , thì bạn hãy trích ra đoạn văn đó cùng với câu hỏi.
 
             ## Văn bản đầu vào:
             "{content}"

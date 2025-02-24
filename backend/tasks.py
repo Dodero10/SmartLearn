@@ -9,17 +9,28 @@ from constants.constants import (BUCKET_NAME, BUCKET_NAME_AUDIO,
                                  BUCKET_NAME_SLIDE, BUCKET_NAME_VIDEO)
 from file_processing.file_processing import chunking, parsing
 from gen_lecture.e2e_lecture import LectureGenerator
-
+from fastapi import HTTPException
 from PIL import Image
 from utils.database_manage import DatabaseManager
 from utils.minio_utils import save_file_to_minio
 
 
 @celery_app.task(name='tasks.save_pdf_to_minio')
-def save_pdf_to_minio(file_data: bytes, filename: str):
+def save_pdf_to_minio(file_data: bytes, filename: str, folder_path: str, overwrite: bool):
     try:
         file_stream = io.BytesIO(file_data)
         content = parsing(file_stream, filename)
+        full_folder_path = os.path.join("graphrag_tutor/index", folder_path)
+        txt_filename = filename.replace(".pdf", ".txt")
+        if ".." in folder_path or not os.path.isdir(full_folder_path):
+            raise HTTPException(status_code=400, detail="Invalid Path.")
+        if not overwrite and  os.path.isfile(os.path.join(full_folder_path, txt_filename)):
+            raise HTTPException(status_code=400, detail=f"Existing file at {os.path.join(folder_path, txt_filename)}")
+        try:
+            with open(os.path.join(full_folder_path, txt_filename), 'w', encoding="utf-8") as f:
+                f.write(content)
+        except Exception as e:
+            return HTTPException(status_code=500, detail=f"Fail to upload file: {str(e)}")
         data, metadata, ids = chunking(content, filename=filename)
 
         try:

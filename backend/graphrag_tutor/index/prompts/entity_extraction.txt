@@ -1,0 +1,104 @@
+
+-Goal-
+Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
+ 
+-Steps-
+1. Identify all entities. For each identified entity, extract the following information:
+- entity_name: Name of the entity, capitalized
+- entity_type: One of the following types: [organization, document, position, abbreviation, IT_System, checklist, activity, term, role, tool, task, action, terminology, procedure, regulation, article, other]
+- entity_description: Comprehensive description of the entity's attributes and activities
+Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
+ 
+2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+For each pair of related entities, extract the following information:
+- source_entity: name of the source entity, as identified in step 1
+- target_entity: name of the target entity, as identified in step 1
+- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
+- relationship_strength: a numeric score indicating strength of the relationship between the source entity and target entity
+ Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_strength>)
+ 
+3. Return output in Vietnamese as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
+ 
+4. When finished, output {completion_delimiter}
+ 
+######################
+-Examples-
+######################
+Example 1:
+Entity_types: [organization, document, position, abbreviation, IT_System, checklist, activity, term, role, tool, task, action, terminology, procedure, regulation, article, other]
+Text:
+#### 1. Mục đích
+- Thống nhất quy trình phối hợp chung giữa các đơn vị, phòng ban trong công ty về việc xây dựng, nâng cấp phần mềm.
+#### 2. Phạm vi áp dụng.
+- Quy trình này được áp dụng cho tất cả các đơn vị thuộc Công ty, các trung tâm, nhà máy in.
+- Áp dụng đối với việc nâng cấp hoặc xây mới các ứng dụng công nghệ thông tin.
+######################
+Output:
+("entity"{tuple_delimiter}QUY TRÌNH PHỐI HỢP{tuple_delimiter}PROCEDURE{tuple_delimiter}Quy trình phối hợp là tài liệu hướng dẫn thống nhất các bước thực hiện giữa các đơn vị và phòng ban trong công ty để xây dựng và nâng cấp phần mềm.)
+{record_delimiter}
+("entity"{tuple_delimiter}CÁC ĐƠN VỊ THUỘC CÔNG TY{tuple_delimiter}ORGANIZATION{tuple_delimiter}Các đơn vị thuộc công ty là các bộ phận, phòng ban hoặc chi nhánh của công ty tham gia thực hiện quy trình phối hợp.)
+{record_delimiter}
+("entity"{tuple_delimiter}CÁC TRUNG TÂM, NHÀ MÁY IN{tuple_delimiter}ORGANIZATION{tuple_delimiter}Các trung tâm và nhà máy in là các đơn vị phụ thuộc vào công ty, chịu trách nhiệm áp dụng quy trình phối hợp này.)
+{record_delimiter}
+("entity"{tuple_delimiter}XÂY DỰNG PHẦN MỀM{tuple_delimiter}TASK{tuple_delimiter}Xây dựng phần mềm là nhiệm vụ phát triển mới các ứng dụng công nghệ thông tin đáp ứng nhu cầu của công ty.)
+{record_delimiter}
+("entity"{tuple_delimiter}NÂNG CẤP PHẦN MỀM{tuple_delimiter}TASK{tuple_delimiter}Nâng cấp phần mềm là hoạt động cải tiến và nâng cao chức năng của các ứng dụng công nghệ thông tin hiện có.)
+{record_delimiter}
+("entity"{tuple_delimiter}ỨNG DỤNG CÔNG NGHỆ THÔNG TIN{tuple_delimiter}IT_SYSTEM{tuple_delimiter}Ứng dụng công nghệ thông tin là các phần mềm và hệ thống được sử dụng trong công ty nhằm hỗ trợ hoạt động kinh doanh và vận hành.)
+{record_delimiter}
+("relationship"{tuple_delimiter}QUY TRÌNH PHỐI HỢP{tuple_delimiter}CÁC ĐƠN VỊ THUỘC CÔNG TY{tuple_delimiter}Quy trình phối hợp áp dụng cho tất cả các đơn vị thuộc công ty nhằm đảm bảo sự thống nhất trong hoạt động xây dựng và nâng cấp phần mềm.{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}QUY TRÌNH PHỐI HỢP{tuple_delimiter}CÁC TRUNG TÂM, NHÀ MÁY IN{tuple_delimiter}Quy trình phối hợp cũng được áp dụng tại các trung tâm và nhà máy in của công ty.{tuple_delimiter}7)
+{record_delimiter}
+("relationship"{tuple_delimiter}QUY TRÌNH PHỐI HỢP{tuple_delimiter}XÂY DỰNG PHẦN MỀM{tuple_delimiter}Quy trình phối hợp hướng dẫn các bước thực hiện để xây dựng phần mềm mới trong công ty.{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}QUY TRÌNH PHỐI HỢP{tuple_delimiter}NÂNG CẤP PHẦN MỀM{tuple_delimiter}Quy trình phối hợp đảm bảo thống nhất khi thực hiện nâng cấp phần mềm trong công ty.{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}XÂY DỰNG PHẦN MỀM{tuple_delimiter}ỨNG DỤNG CÔNG NGHỆ THÔNG TIN{tuple_delimiter}Xây dựng phần mềm nhằm tạo ra các ứng dụng công nghệ thông tin mới cho công ty.{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}NÂNG CẤP PHẦN MỀM{tuple_delimiter}ỨNG DỤNG CÔNG NGHỆ THÔNG TIN{tuple_delimiter}Nâng cấp phần mềm giúp cải thiện và tối ưu hóa các ứng dụng công nghệ thông tin hiện có.{tuple_delimiter}8)
+{completion_delimiter}
+
+######################
+Example 2:
+Entity_types: [organization, document, position, abbreviation, IT_System, checklist, activity, term, role, tool, task, action, terminology, procedure, regulation, article, other]
+Text:
+## Điều 2. Quy định về chủ sở hữu
+#### 1. Chủ sở hữu dữ liệu là nhân sự cấp lãnh đạo đơn vị nghiệp vụ, chịu trách nhiệm với mọi tác động tới dữ liệu nằm trong phạm vi quản lý. Nhiệm vụ cụ thể của chủ sở hữu dữ liệu bao gồm:
+a.       Chỉ định nhân sự Quản trị nghiệp vụ dữ liệu theo danh mục dữ liệu.
+b.       Đảm bảo dữ liệu chất lượng cao, tuân thủ theo các quy định hiện hành và đem lại giá trị hiệu quả cho công tác nghiệp vụ của đơn vị.
+c.       Quản lý quyền truy cập, khai thác sử dụng dữ liệu, nhằm đảm bảo dữ liệu trong phạm vi quản lý được sử dụng đúng mục đích.
+d.       Lên kế hoạch và triển khai chiến lược quản lý nghiệp vụ trong mảng nghiệp vụ, phê duyệt và đề xuất, xếp loại ưu tiên vấn đề xuất phát từ dữ liệu cần xử lý và điều phối nguồn lực phù hợp.
+######################
+Output:
+("entity"{tuple_delimiter}CHỦ SỞ HỮU DỮ LIỆU{tuple_delimiter}ROLE{tuple_delimiter}Chủ sở hữu dữ liệu là nhân sự cấp lãnh đạo đơn vị nghiệp vụ, chịu trách nhiệm với mọi tác động tới dữ liệu trong phạm vi quản lý, đảm bảo dữ liệu chất lượng và tuân thủ quy định.)
+{record_delimiter}
+("entity"{tuple_delimiter}QUẢN TRỊ NGHIỆP VỤ DỮ LIỆU{tuple_delimiter}ROLE{tuple_delimiter}Quản trị nghiệp vụ dữ liệu là nhân sự được chỉ định để quản lý và thực hiện các hoạt động liên quan đến danh mục dữ liệu cụ thể.)
+{record_delimiter}
+("entity"{tuple_delimiter}DANH MỤC DỮ LIỆU{tuple_delimiter}CHECKLIST{tuple_delimiter}Danh mục dữ liệu là tập hợp các loại dữ liệu được quản lý và sử dụng bởi đơn vị nghiệp vụ theo chỉ định của chủ sở hữu dữ liệu.)
+{record_delimiter}
+("entity"{tuple_delimiter}QUY ĐỊNH HIỆN HÀNH{tuple_delimiter}REGULATION{tuple_delimiter}Quy định hiện hành là các quy tắc và tiêu chuẩn đang áp dụng mà dữ liệu phải tuân thủ để đảm bảo tính hợp pháp và hiệu quả.)
+{record_delimiter}
+("entity"{tuple_delimiter}QUYỀN TRUY CẬP, KHAI THÁC SỬ DỤNG DỮ LIỆU{tuple_delimiter}TERMINOLOGY{tuple_delimiter}Quyền truy cập, khai thác sử dụng dữ liệu là các quyền hạn được quản lý bởi chủ sở hữu dữ liệu nhằm đảm bảo sử dụng đúng mục đích.)
+{record_delimiter}
+("entity"{tuple_delimiter}KẾ HOẠCH QUẢN LÝ NGHIỆP VỤ{tuple_delimiter}PROCEDURE{tuple_delimiter}Kế hoạch quản lý nghiệp vụ là chiến lược được xây dựng và triển khai để quản lý dữ liệu trong mảng nghiệp vụ, bao gồm phê duyệt, xếp loại ưu tiên và điều phối nguồn lực.)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHỦ SỞ HỮU DỮ LIỆU{tuple_delimiter}QUẢN TRỊ NGHIỆP VỤ DỮ LIỆU{tuple_delimiter}Chủ sở hữu dữ liệu có trách nhiệm chỉ định nhân sự quản trị nghiệp vụ dữ liệu theo danh mục dữ liệu.{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHỦ SỞ HỮU DỮ LIỆU{tuple_delimiter}DANH MỤC DỮ LIỆU{tuple_delimiter}Chủ sở hữu dữ liệu quản lý danh mục dữ liệu trong phạm vi đơn vị nghiệp vụ.{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHỦ SỞ HỮU DỮ LIỆU{tuple_delimiter}QUY ĐỊNH HIỆN HÀNH{tuple_delimiter}Chủ sở hữu dữ liệu đảm bảo dữ liệu tuân thủ các quy định hiện hành.{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHỦ SỞ HỮU DỮ LIỆU{tuple_delimiter}QUYỀN TRUY CẬP, KHAI THÁC SỬ DỤNG DỮ LIỆU{tuple_delimiter}Chủ sở hữu dữ liệu chịu trách nhiệm quản lý quyền truy cập và khai thác sử dụng dữ liệu.{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHỦ SỞ HỮU DỮ LIỆU{tuple_delimiter}KẾ HOẠCH QUẢN LÝ NGHIỆP VỤ{tuple_delimiter}Chủ sở hữu dữ liệu xây dựng và triển khai kế hoạch quản lý nghiệp vụ để điều phối nguồn lực và xử lý vấn đề liên quan đến dữ liệu.{tuple_delimiter}8)
+{completion_delimiter}
+
+######################
+
+-Real Data-
+######################
+Entity_types: [organization, document, position, abbreviation, IT_System, checklist, activity, term, role, tool, task, action, terminology, procedure, regulation, article, other]
+Text: {input_text}
+######################
+Output:

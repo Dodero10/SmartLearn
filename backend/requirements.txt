@@ -16,3 +16,4 @@ numpy
 pydub
 google-generativeai
 google-genai
+graphrag==0.3.6

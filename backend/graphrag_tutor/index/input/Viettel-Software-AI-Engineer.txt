@@ -1,0 +1,55 @@
+
+# THÔNG TIN TUYỂN DỤNG
+
+## Vị trí:
+Ai Engineer
+
+## Địa điểm:
+36A Dịch Vọng Hậu, Cầu Giấy, Hà Nội
+
+## Thời gian làm việc:
+Thứ 2 đến Thứ 6 (8h00-12h00, 13h30-17h30), nghỉ Thứ 7 và Chủ nhật
+
+## Mô tả công việc:
+- Tham gia phát triển các sản phẩm nội bộ về Chatbot, CV, OCR, Voice2Text… bằng ứng dụng AI từ các kỹ thuật ML, DL, Transformer, LLM/ Prompt/ Multi agent...
+- Đảm bảo chất lượng dữ liệu, kết quả mô hình, báo cáo định kỳ tự động.
+- Chịu trách nhiệm bảo trì, cải thiện, làm sạch và thao tác dữ liệu, khắc phục các sự cố tồn tại.
+- Thiết kế API giao tiếp với các hệ thống bên b outside, hợp tác với các nhóm khác để tìm hợp giải pháp xây dựng sản phẩm hiện.
+- Đồng góp ý kiến phát triển nền tảng Product vối docker và docker-compose.
+- Xây dựng các tài liệu Thiết kế tổng thể, giải pháp, Thiết kế chi tiết, tài liệu Giám sát, theo quy trình DS/AI.
+- Phối hợp hỗ trợ các bộ phận khác để triển khai hệ thống.
+- Đề xuất giải pháp AI, nghiên cứu phát triển các giải pháp AI tiềm năng và lên kế hoạch triển khai.
+- Công việc sẽ được trao đổi cụ thể hơn trong quá trình phỏng vấn.
+
+## Yêu cầu công việc:
+1. Tốt nghiệp ĐH chuyên ngành: Khoa học dữ liệu, Khoa học máy tính, Công nghệ thông tin, Toán tin ứng dụng, Điện tử viễn thông hoặc liên quan.
+2. Có kinh nghiệm 1-3 năm vị trí Ai Engineer.
+3. Kiến thức về lập trình, cấu trúc dữ liệu và giải thuật, lý thuyết đồ thị.
+4. Kiến thức về các loại CSDL (RDBMS, Graph Databases, NoSQL Products, ...).
+# Viettel Software
+
+## 1. Chế độ lương, thưởng, thu nhập:
+- Thu nhập cạnh tranh, thỏa thuận theo năng lực
+- Phúc lợi: Lương tháng 13, thưởng Bonus, hỗ trợ tiền trưa, điện thoại, nghỉ phép, thưởng ngày lễ và các ngày nghỉ có Viatel như Ngày Sáng Tạo - 1/6, 22/12, quà Tết Dương, Tết Âm tri ân Gia đình, người sinh thành.
+- Nghỉ phép năm: 16 ngày/năm
+- Đánh giá lương 2 lần/năm
+- Được đóng đầy đủ về các chế độ bảo hiểm xã hội, bảo hiểm y tế, bảo hiểm thất nghiệp và các gói bảo hiểm sức khỏe khác. Hãng nằm CBVN được tham gia khám sức khỏe định kỳ tại các bệnh viện lớn.
+
+## 2. Môi trường làm việc:
+- Được làm việc trong Tập đoàn toàn cầu, tiên phong thực hiện sứ mệnh kiến tạo xã hội số.
+- Môi trường mở, trẻ trung, năng động, trân trọng, yếu thương, tương hỗ & lắng nghe mọi người từ những ý tưởng mới nhất.
+- Không gian làm việc xanh, sạch, hiện đại.
+
+## 3. Cơ hội phát triển bản thân:
+- Có cơ hội phát triển lực công nghệ tiên tiến, hiện đại nhất.
+- Được thực hiện các dự án hấp dẫn, thử thách đủ lớn trong và ngoài nghề nghiệp để trưởng thành.
+- Cơ hội trao quyền sáng tạo với đam mê của tuổi trẻ.
+- Cơ hội được hỏi từ các chuyên gia hàng đầu, lãnh đạo và đồng nghiệp uy tín. 
+- Có cơ hội được đào tạo, tráo đổi kỹ năng, chuyên môn để phát triển toàn diện.
+# LIÊN HỆ
+
+Gửi CV ứng tuyển qua:
+
+- Email: anhdp7@viettelsoftware.com
+- Người liên hệ: Đỗ Phương Anh
+- Số điện thoại: 0325665987

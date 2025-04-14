@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation-Chatbot</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3a1;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .header-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .header-content p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background-color: #3da889;
+            transform: translateY(-3px);
+        }
+        
+        section {
+            padding: 4rem 0;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .section-header h2 {
+            font-size: 2rem;
+            color: var(--secondary-color);
+            position: relative;
+            padding-bottom: 1rem;
+        }
+        
+        .section-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 4px;
+            width: 60px;
+            background-color: var(--accent-color);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .feature-card h3 {
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .setup-section {
+            background-color: var(--dark-bg);
+            color: white;
+        }
+        
+        .setup-section h2::after {
+            background-color: white;
+        }
+        
+        .setup-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+        
+        .setup-card {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 2rem;
+        }
+        
+        .setup-card h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        pre {
+            background-color: rgba(0,0,0,0.3);
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+        
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
+        footer {
+            background-color: var(--dark-bg);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: var(--accent-color);
+        }
+        
+        @media (max-width: 768px) {
+            .setup-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content h1 {
+                font-size: 2rem;
+            }
+            
+            .header-content p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <h1>Automation-Chatbot</h1>
+            <p>Một giải pháp chatbot hiện đại với giao diện trực quan và khả năng tự động hóa mạnh mẽ</p>
+            <a href="https://github.com/dodero10/Automation-Chatbot" class="btn">Xem trên GitHub</a>
+        </div>
+    </header>
+    
+    <section>
+        <div class="container">
+            <div class="section-header">
+                <h2>Tính năng</h2>
+            </div>
+            <div class="features">
+                <div class="feature-card">
+                    <h3>Giao diện hiện đại</h3>
+                    <p>Giao diện người dùng trực quan, thân thiện với trải nghiệm mượt mà và thiết kế responsive.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Backend mạnh mẽ</h3>
+                    <p>Xây dựng trên nền tảng FastAPI với Python 3.11, đảm bảo hiệu suất cao và khả năng mở rộng.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Docker tích hợp</h3>
+                    <p>Triển khai dễ dàng với Docker, giúp dự án của bạn chạy nhất quán trên mọi môi trường.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="setup-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Cài đặt</h2>
+            </div>
+            <div class="setup-container">
+                <div class="setup-card">
+                    <h3>1. Chạy Frontend</h3>
+                    <pre><code>
+# Tạo file .env từ file .env.example
+cp .env.example .env
+
+# CD vào folder chatbot-frontend
+cd chatbot-frontend
+
+# Install dependencies
+npm install
+
+# Run frontend
+npm start
+                    </code></pre>
+                </div>
+                <div class="setup-card">
+                    <h3>2. Chạy Backend</h3>
+                    <pre><code>
+# Tạo file .env từ file .env.example
+cp .env.example .env
+
+# Run docker compose
+docker compose up --build
+# hoặc
+docker compose up -d
+
+# CD vào folder chatbot-backend
+cd chatbot-backend
+
+# Tạo môi trường với anaconda
+conda create -n myenv python=3.11
+
+# Activate môi trường
+conda activate myenv
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Seed data vào database
+python app/database/seed.py
+
+# Run backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8030
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <div class="container">
+            <p>© 2025 Automation-Chatbot</p>
+            <div class="footer-links">
+                <a href="https://github.com/dodero10/Automation-Chatbot">GitHub</a>
+                <a href="https://github.com/dodero10/Automation-Chatbot/issues">Báo cáo lỗi</a>
+                <a href="https://github.com/dodero10/Automation-Chatbot/wiki">Wiki</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

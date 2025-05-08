@@ -1,5 +1,5 @@
 from typing import Any, Dict
-
+import os
 from constants.constants import (BUCKET_NAME_AUDIO, BUCKET_NAME_METADATA,
                                  BUCKET_NAME_SCRIPTS, BUCKET_NAME_VIDEO)
 from utils.minio_utils import save_file_to_minio
@@ -59,8 +59,11 @@ class LectureGenerator:
             # 3. Generate and save script
             script_generator = ScriptGenerator(lecture_metadata)
             full_script, slide_scripts = script_generator.generate_script()
-
-            print(full_script)  # Phúc lấy ở đây
+            
+            full_folder_path = os.path.join("graphrag_tutor/index", "input")
+            txt_filename = f"{self.base_filename}.txt"
+            with open(os.path.join(full_folder_path, txt_filename), 'w', encoding="utf-8") as f:
+                f.write(full_script)
 
             # Save main script with just the base name
             script_filename = self._save_to_minio(

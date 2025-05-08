@@ -51,13 +51,32 @@ def query(question: str):
 def gen_quiz(filenames:list[str]):
     client = QuestionType()
     content=[]
+    metadata=[]
     quizzs=[]
+    concat_to_quiz = []
     database_manager = DatabaseManager()
     for filename in filenames:
         collection=database_manager.collection.get(where={"filename":filename})
         content.extend(collection['documents'])
-    for cont in content:
-        quizz=client.gen_question(cont)
+        metadata.extend(collection['metadatas'])
+        content_to_concat = []
+        for i in range(len(content)):
+            if i > 0 and all(
+                key in metadata[i] and key in metadata[i - 1] and metadata[i][key] == metadata[i - 1][key]
+                for key in ["Header 1", "Header 2"]
+            ):
+                content_to_concat.append(content[i])
+            else:
+                if content_to_concat:
+                    concat_to_quiz.append(" ".join(content_to_concat))
+                    content_to_concat = []
+                content_to_concat.append(content[i])
+
+        if content_to_concat:  # Xử lý phần tử còn lại sau vòng lặp
+            concat_to_quiz.append(" ".join(content_to_concat))
+    for concat in concat_to_quiz:
+        
+        quizz=client.gen_question(concat)
      
         if not quizz  or not isinstance(quizz, list):
             continue

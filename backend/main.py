@@ -3,7 +3,7 @@ import io
 import logging
 import os
 from datetime import datetime
-
+import subprocess
 from celery import chain
 from celery.result import AsyncResult
 from chat_query.query import gen_quiz, query
@@ -12,10 +12,13 @@ from config.minio_client import (bucket_name, bucket_name_script,
                                  bucket_name_video, minio_client)
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse,JSONResponse
 from pydantic import BaseModel
 from tasks import generate_lecture, save_pdf_to_minio, upload_slide
-
+from utils.database_manage import DatabaseManager
+from typing_extensions import Annotated
+from graphrag_tutor.query.LocalQuery import LocalQuery
+from graphrag_tutor.query.GlobalQuery import GlobalQuery
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,6 +46,66 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+class UploadResponse(BaseModel):
+    task_id: str
+    message: str
+
+@app.post("/upload_pdf/", response_model=UploadResponse)
+async def upload_file(file: Annotated[UploadFile, File(description="Upload file to the specify folder")],
+                      folder_path: str = "input",
+                      overwrite: bool = True) -> UploadResponse:
+    if file.content_type != "application/pdf":
+        return {"error": "Chỉ chấp nhận file PDF"}
+
+    file_data = await file.read()  # Đọc nội dung file
+
+    filename = file.filename
+
+    task = save_pdf_to_minio.delay(file_data, filename, folder_path, overwrite)
+
+    return {"task_id": task.id, "message": "File đang được tải lên"}
+
+@app.post("/run_indexing_graph/")
+async def run_indexing():
+    try:
+        src_dir = "graphrag_tutor"  # Đường dẫn thư mục
+        cmd = ["python", "-m", "graphrag.index", "--root", "./index"]
+
+        # Chạy lệnh với cwd=src_dir
+        result = subprocess.run(cmd, cwd=src_dir, capture_output=True, text=True, check=True)
+
+        return JSONResponse(
+            content={"message": "Lệnh chạy thành công", "output": result.stdout},
+            status_code=200
+        )
+
+    except subprocess.CalledProcessError as e:
+        return JSONResponse(
+            content={"error": "Lỗi khi chạy lệnh", "details": e.stderr},
+            status_code=500
+        )
+
+@app.post("/query_local")
+async def query_local(query: str):
+    try:
+        local_pipeline = LocalQuery()
+        task = asyncio.create_task(local_pipeline.aquery(query))  # Chạy async task
+        answer, local_result, output_tokens = await task
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/query_global")
+async def query_global(query: str):
+    try:
+        global_pipeline = GlobalQuery()
+        global_pipeline.load_data()
+        global_pipeline.prepare_context_builder()
+        task = asyncio.create_task(global_pipeline.aquery(query))
+        answer, local_result, output_tokens = await task
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload_pdf/")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -182,9 +245,7 @@ def gen_quizz(filenames: list[str]):
 def test():
     data = DatabaseManager()
     return data.collection.get()
-
-
-# Dat
+####### Dat
 
 @app.post("/upload_slide", tags=["Slide2Video"])
 async def handle_upload_slide(file: UploadFile = File(...)):

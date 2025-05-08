@@ -1,0 +1,75 @@
+
+# Nguyễn Hoàng Phúc
+Khoa học máy tính  
+Trưởng Công nghệ Thông tin và Truyền thông  
+Đại học Bách Khoa Hà Nội  
+
+## HỌC VẤN
+Đại học Bách Khoa Hà Nội  
+Khoa học máy tính  
+2021 - hiện tại  
+CPA: 3.71/4  
+
+## THÀNH TÍCH VÀ CHỨNG CHỈ
+- Học bổng khuyến khích học tập học kỳ 4 và 5  
+- Fine Tuning LLM with Hugging Face Transformers for NLP - Udemy Course Certificate  
+  - 01/2024  
+- LLM Engineering: Master AI, Large Language Models Agents - Udemy Course Certificate  
+  - 06/2024  
+- Chứng chỉ TOEIC quốc tế IIG: 930/990  
+  - 10/2024  
+
+## KINH NGHIỆM LÀM VIỆC
+1. Công ty TNHH PIXTA Việt Nam  
+   Nhân viên gắn nhãn dữ liệu  
+   - Tham gia vào dự án phân loại ảnh  
+   - Hà Nội  
+   - 02/2023 - 03/2023  
+
+2. Trường Công nghệ Thông tin và Truyền thông - Đại học Bách Khoa Hà Nội  
+   Trợ giảng  
+   - Trợ giảng lớp thực hành môn Tin học đại cương  
+   - Trợ giảng lớp thực hành môn Lập trình hướng đối tượng  
+   - Hà Nội  
+   - 09/2023 - 01/2024  
+
+3. Trung tâm nghiên cứu quốc tế BKAI  
+   Research Assistant  
+   - Tham gia vào Foundation Models Lab  
+   - Hà Nội  
+   - 01/2024 - 12/2024  
+
+4. Công ty Dầu tư Công nghệ Viettel - Viettel Software  
+   Thực tập sinh  
+   - Tham gia vào dự án phát triển chatbot hỏi đáp quy trình, quy định công ty  
+   - Hà Nội  
+   - 11/2024 - hiện tại  
+
+## PROJECT
+### Chatbot hỏi đáp về bệnh tim
+- Link: [https://github.com/phuccodetrau/Heart-disease-chatbot](https://github.com/phuccodetrau/Heart-disease-chatbot)  
+- Mô tả: Phát triển chatbot sử dụng mô hình Retrieval-Augmented Generation (RAG) để cung cấp các thông tin và lời khuyên về sức khỏe tim mạch. Project sử dụng thư viện Streamlit để xây dựng giao diện tương tác, Huggingface để tài model LLM, Langchain làm orchestration dữ liệu và FAISS để xây dựng vector database.  
+- Tools & Framework: LangChain, HuggingFace, Streamlit.  
+- Nhận diện địa điểm lịch sử và du lịch tại Hà Nội  
+  - 09/2023 - 01/2024  
+# Historical Site Classification
+
+- Link: [github.com/phucodetrua/HistoricalSiteClassification](https://github.com/phucodetrua/HistoricalSiteClassification)
+- Số lượng thành viên: 5
+- Mô tả: Huấn luyện một mô hình để phân loại các địa điểm lịch sử và du lịch quanh Hồ Tây và Hồ Hoàn Kiếm ở Hà Nội sử dụng mô hình EfficientNet B0 pretrained. Project sử dụng OpenCV để tiền xử lý dữ liệu và TensorFlow để train số và huấn luyện mô hình EfficientNet B0 pretrained.
+- Tools & Framework: Tensorflow, Open-CV
+- Thời gian thực hiện: 06/2024 - 11/2024
+
+# Hệ thống tư vấn pháp luật
+
+- Số lượng thành viên: 4
+- Mô tả: Hệ thống này được xây dựng trong thời gian làm việc tại Foundation Models Lab với mục đích hỗ trợ luật sư hỏi đáp và tạo các văn bản liên quan đến pháp luật. Hệ thống gồm các thành phần: parsing dữ liệu sử dụng API của GPT-4-мини để chuyển đổi tài liệu dưới dạng văn bản, sử dụng kết hợp giữa mô hình RAG truyền thông và GraphRAG của Microsoft với sự hỗ trợ từ 2 database: Weaviate và Neo4j để truy xuất thông tin và phần hỏi người dùng và phần giao diện tưởng tác được xây dựng bởi thư viện ReactJS.
+- Tools & Framework: Weaviate, OpenAI, Neo4j, LlamaIndex, Minio, ReactJS
+
+# Kỹ năng và sở thích
+
+- Ngôn ngữ lập trình: Python, Java, Javascript, HTML, CSS, C++, C
+- Công cụ phát triển: Visual Studio Code, IDEA IntelliJ, Pycharm, Docker
+- Framework: Python, Tensorflow, LangChain, LlamaIndex, HuggingFace
+- Cloud/Databases: MySQL, MongoDB, SQL Server, Weaviate, Chromadb
+- Lĩnh vực quản lý: Data Science, AI Engineer, Project Management

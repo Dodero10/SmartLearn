@@ -7,3 +7,5 @@ __pycache__
 *.pyz
 *.pywz
 google-credentials.json
+graphrag_tutor/index/cache
+graphrag_tutor/index/output
